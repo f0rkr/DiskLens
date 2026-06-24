@@ -44,6 +44,8 @@ final class AppModel {
     var currentPath = ""
     var selection: Section = .overview
     var insights = ScanInsights()
+    var lastDelta: ScanDelta?        // what grew/shrank vs the previous scan of this folder
+    var unreadableCount = 0          // directories skipped because they couldn't be read
 
     // Derived analyses (computed lazily after a scan / on demand)
     var duplicateGroups: [DuplicateGroup] = []
@@ -128,8 +130,11 @@ final class AppModel {
         didRunDuplicates = false
         cleanupSuggestions = []
         lastActionMessage = nil
+        lastDelta = nil
+        unreadableCount = 0
 
         scanTask = Task.detached(priority: .userInitiated) { [weak self] in
+            var deniedCount = 0
             let node = ScanEngine.buildTree(
                 at: url,
                 isCancelled: { Task.isCancelled },
@@ -138,16 +143,20 @@ final class AppModel {
                         self?.filesScanned = count
                         self?.currentPath = path
                     }
-                })
-            // Heavy aggregation runs off the main actor so the UI never walks the tree.
+                },
+                onUnreadable: { _ in deniedCount += 1 })
+            // Heavy work runs off the main actor so the UI never walks the tree.
             let insights = node.map { ScanInsights.compute(from: $0) } ?? ScanInsights()
             let cleanup = node.map { CleanupRules.analyze($0) } ?? []
+            let delta = node.flatMap { ScanHistory.record($0, path: url.path) }
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 if !Task.isCancelled {
                     self.rootNode = node
                     self.insights = insights
                     self.cleanupSuggestions = cleanup
+                    self.lastDelta = delta
+                    self.unreadableCount = deniedCount
                     self.lastActionMessage = self.pendingMessage
                     self.pendingMessage = nil
                 }
@@ -174,6 +183,8 @@ final class AppModel {
         didRunDuplicates = false
         cleanupSuggestions = []
         lastActionMessage = nil
+        lastDelta = nil
+        unreadableCount = 0
     }
 
     // MARK: - Duplicates (run on demand — it's the expensive pass)

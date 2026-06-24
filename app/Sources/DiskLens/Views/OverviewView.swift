@@ -5,6 +5,7 @@ import Charts
 /// of stat cards on top, then "usage by type" and "largest items" side by side.
 struct OverviewView: View {
     let insights: ScanInsights
+    var delta: ScanDelta? = nil
 
     private var catTotal: Int64 { max(1, insights.categories.reduce(0) { $0 + $1.bytes }) }
     private var maxTop: Int64 { insights.topItems.first?.size ?? 1 }
@@ -17,6 +18,7 @@ struct OverviewView: View {
                                        description: Text("This folder has no files to summarize."))
             } else {
                 VStack(spacing: 16) {
+                    if let d = delta, d.hasChanges { deltaBanner(d) }
                     statRow
                     HStack(spacing: 16) {
                         byType
@@ -146,6 +148,36 @@ struct OverviewView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .card(18)
+    }
+
+    // MARK: - "what grew" since the last scan of this folder
+
+    private func deltaBanner(_ d: ScanDelta) -> some View {
+        let grew = d.totalChange >= 0
+        let accent = grew ? Color.orange : Color.green
+        return HStack(spacing: 10) {
+            Image(systemName: grew ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill")
+                .foregroundStyle(accent)
+            Text("\(grew ? "+" : "-")\(ByteFormat.string(abs(d.totalChange)))")
+                .font(.headline).foregroundStyle(accent)
+            Text("since \(d.since.formatted(.relative(presentation: .named)))")
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            ForEach(Array(d.changes.prefix(3).enumerated()), id: \.offset) { _, ch in
+                HStack(spacing: 4) {
+                    Image(systemName: ch.delta >= 0 ? "arrow.up" : "arrow.down").font(.caption2)
+                    Text(ch.name).lineLimit(1)
+                    Text("\(ch.delta >= 0 ? "+" : "-")\(ByteFormat.string(abs(ch.delta)))")
+                        .foregroundStyle(.secondary).monospacedDigit()
+                }
+                .font(.caption)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Color.primary.opacity(0.06), in: Capsule())
+            }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(14)
     }
 
     private func pct(_ b: Int64) -> String {

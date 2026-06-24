@@ -116,6 +116,38 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
         #expect(!ScanEngine.isExcludedSystemPath("/Applications"))
         #expect(!ScanEngine.isExcludedSystemPath("/Users/me/Documents"))
     }
+
+    @Test func classifiesPermissionErrors() {
+        #expect(ScanEngine.isPermissionDenied(NSError(domain: NSCocoaErrorDomain, code: NSFileReadNoPermissionError)))
+        #expect(ScanEngine.isPermissionDenied(NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))))
+        #expect(!ScanEngine.isPermissionDenied(NSError(domain: NSCocoaErrorDomain, code: NSFileNoSuchFileError)))
+    }
+}
+
+// MARK: - Scan history ("what grew")
+
+@Suite struct ScanHistoryTests {
+    @Test func snapshotCapturesTopLevelAndTotal() {
+        let root = mkDir("root", [mkFile("a", 100), mkDir("sub", [mkFile("x", 30)])])
+        let s = ScanHistory.snapshot(of: root, date: Date(timeIntervalSince1970: 0))
+        #expect(s.totalBytes == 130)
+        #expect(s.entries["a"] == 100)
+        #expect(s.entries["sub"] == 30)
+        #expect(s.entries.count == 2)
+    }
+
+    @Test func deltaRanksChangesAndTotals() {
+        let old = ScanSnapshot(date: Date(timeIntervalSince1970: 0), totalBytes: 100,
+                               entries: ["A": 50, "B": 50])
+        let new = ScanSnapshot(date: Date(timeIntervalSince1970: 1000), totalBytes: 140,
+                               entries: ["A": 90, "B": 40, "C": 10])   // A +40, B -10, C +10
+        let d = ScanHistory.delta(from: old, to: new)
+        #expect(d.totalChange == 40)
+        #expect(d.changes.count == 3)
+        #expect(d.changes.first?.name == "A")        // largest magnitude first
+        #expect(d.changes.first?.delta == 40)
+        #expect(d.biggestGrower?.name == "A")
+    }
 }
 
 // MARK: - In-app Bin (staged deletions)

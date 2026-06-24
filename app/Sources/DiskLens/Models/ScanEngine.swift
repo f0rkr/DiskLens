@@ -27,9 +27,22 @@ enum ScanEngine {
         excludedPaths.contains(path)
     }
 
+    /// Whether a directory-read error is a permissions denial (i.e. the user
+    /// likely needs to grant Full Disk Access), as opposed to a transient error.
+    static func isPermissionDenied(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain && ns.code == NSFileReadNoPermissionError { return true }
+        if ns.domain == NSPOSIXErrorDomain && (ns.code == Int(EACCES) || ns.code == Int(EPERM)) { return true }
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return isPermissionDenied(underlying)
+        }
+        return false
+    }
+
     static func buildTree(at root: URL,
                           isCancelled: @escaping () -> Bool,
-                          progress: @escaping (Int, String) -> Void) -> FileNode? {
+                          progress: @escaping (Int, String) -> Void,
+                          onUnreadable: ((URL) -> Void)? = nil) -> FileNode? {
         var counter = 0
         let rootPath = root.path
         var lastEmit = DispatchTime.now()
@@ -70,10 +83,14 @@ enum ScanEngine {
                 }
 
                 let node = FileNode(url: url, name: name, isDirectory: true)
-                let contents = (try? FileManager.default.contentsOfDirectory(
-                    at: url,
-                    includingPropertiesForKeys: prefetchKeys,
-                    options: [])) ?? []
+                let contents: [URL]
+                do {
+                    contents = try FileManager.default.contentsOfDirectory(
+                        at: url, includingPropertiesForKeys: prefetchKeys, options: [])
+                } catch {
+                    if isPermissionDenied(error) { onUnreadable?(url) }
+                    contents = []
+                }
 
                 var total: Int64 = 0
                 var count = 0

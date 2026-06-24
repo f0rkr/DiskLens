@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
@@ -10,6 +11,9 @@ struct ContentView: View {
             } else if let root = model.rootNode {
                 VStack(spacing: 0) {
                     TopBar()
+                    if model.unreadableCount > 0 {
+                        FullDiskAccessBanner(count: model.unreadableCount)
+                    }
                     sectionContent(root: root)
                         .id(root.id)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -24,7 +28,7 @@ struct ContentView: View {
     @ViewBuilder
     private func sectionContent(root: FileNode) -> some View {
         switch model.selection {
-        case .overview:   OverviewView(insights: model.insights)
+        case .overview:   OverviewView(insights: model.insights, delta: model.lastDelta)
         case .breakdown:  BreakdownView(root: root)
         case .treemap:    TreemapView(root: root)
         case .files:      FilesView()
@@ -189,5 +193,33 @@ struct ScanProgressView: View {
     }
     private func tile(_ c: Color, _ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 3).fill(c).frame(width: w, height: h).offset(x: x, y: y)
+    }
+}
+
+/// Shown after a scan when some folders couldn't be read — points the user to
+/// grant Full Disk Access so the next scan can see everything.
+struct FullDiskAccessBanner: View {
+    @Environment(AppModel.self) private var model
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "lock.shield.fill").foregroundStyle(.orange)
+            Text("\(count) folder\(count == 1 ? "" : "s") couldn't be read. Grant Full Disk Access to include everything.")
+                .font(.callout)
+            Spacer()
+            Button("Grant Access…") { openFullDiskAccess() }.controlSize(.small)
+            Button("Rescan") { if let u = model.scannedRoot { model.scan(u) } }
+                .controlSize(.small).disabled(model.isScanning)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(.orange.opacity(0.10))
+        .overlay(alignment: .bottom) { Divider() }
+    }
+
+    private func openFullDiskAccess() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+            NSWorkspace.shared.open(url)
+        }
     }
 }
