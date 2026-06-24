@@ -120,8 +120,7 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
 
 // MARK: - In-app Bin (staged deletions)
 
-@MainActor
-@Suite struct BinTests {
+@Suite(.serialized) @MainActor struct BinTests {
     @Test func addRemoveToggleAndTotal() {
         let m = AppModel()
         m.clearBin()
@@ -150,5 +149,29 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
         m.clearBin()
         #expect(m.binItems.isEmpty)
         #expect(m.binTotalBytes == 0)
+    }
+
+    @Test func binPersistsAcrossRelaunchAndPrunesVanished() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("bin-persist-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let f = dir.appendingPathComponent("staged.bin")
+        try Data(count: 4096).write(to: f)
+
+        let m1 = AppModel()
+        m1.clearBin()
+        m1.addToBin(url: f, size: 4096, name: "staged.bin", isDirectory: false)
+        #expect(m1.isInBin(f))
+
+        let m2 = AppModel()                          // fresh launch reloads the saved bin
+        #expect(m2.isInBin(f))
+        #expect(m2.binItems.contains { $0.url == f })
+
+        // A file that vanished on disk should not survive the next reload.
+        try FileManager.default.removeItem(at: f)
+        let m3 = AppModel()
+        #expect(!m3.isInBin(f))
+        m3.clearBin()
     }
 }

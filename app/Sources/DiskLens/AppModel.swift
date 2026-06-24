@@ -3,7 +3,7 @@ import AppKit
 import Observation
 
 /// One file or folder staged for deletion in the in-app Bin.
-struct BinItem: Identifiable, Hashable {
+struct BinItem: Identifiable, Hashable, Codable {
     let url: URL
     let size: Int64
     let name: String
@@ -64,10 +64,14 @@ final class AppModel {
 
     private var pendingMessage: String?
     private let recentsKey = "recentFolders"
+    private let binKey = "binItems"
     private var scanTask: Task<Void, Never>?
     private var dupTask: Task<Void, Never>?
 
-    init() { loadRecents() }
+    init() {
+        loadRecents()
+        loadBin()
+    }
 
     func loadRecents() {
         let paths = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
@@ -250,6 +254,7 @@ final class AppModel {
         binURLs.insert(url)
         binItems.append(BinItem(url: url, size: size,
                                 name: name ?? url.lastPathComponent, isDirectory: isDir))
+        saveBin()
     }
 
     func toggleBin(_ node: FileNode) {
@@ -259,12 +264,31 @@ final class AppModel {
     func removeFromBin(_ url: URL) {
         binURLs.remove(url)
         binItems.removeAll { $0.url == url }
+        saveBin()
     }
 
     /// Un-stage everything without deleting.
     func clearBin() {
         binItems.removeAll()
         binURLs.removeAll()
+        saveBin()
+    }
+
+    // The Bin survives quits: persisted to UserDefaults, reloaded on launch
+    // (dropping anything that no longer exists on disk).
+    private func loadBin() {
+        guard let data = UserDefaults.standard.data(forKey: binKey),
+              let saved = try? JSONDecoder().decode([BinItem].self, from: data) else { return }
+        let existing = saved.filter { FileManager.default.fileExists(atPath: $0.url.path) }
+        binItems = existing
+        binURLs = Set(existing.map(\.url))
+        if existing.count != saved.count { saveBin() }   // prune vanished items
+    }
+
+    private func saveBin() {
+        if let data = try? JSONEncoder().encode(binItems) {
+            UserDefaults.standard.set(data, forKey: binKey)
+        }
     }
 
     /// Commit the bin: move every staged item to the Trash (recoverable), then
