@@ -15,12 +15,12 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15            # Xcode 16 / Swift 6 — matches the dev toolchain
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode.app
+      - name: Select latest Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app && swift --version
 
       - name: Build & package
         run: |
