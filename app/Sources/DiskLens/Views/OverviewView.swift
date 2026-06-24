@@ -11,6 +11,9 @@ struct OverviewView: View {
     private var maxTop: Int64 { insights.topItems.first?.size ?? 1 }
     private var topItems: [FileNode] { Array(insights.topItems.prefix(7)) }
 
+    /// One size for every stat value, so the cards read consistently.
+    private let statFont = Font.system(size: 30, weight: .bold, design: .rounded)
+
     var body: some View {
         Group {
             if insights.totalFiles == 0 {
@@ -39,8 +42,8 @@ struct OverviewView: View {
             totalCard
             stat("Files", insights.totalFiles.formatted(), "doc.on.doc.fill")
             stat("Types", "\(insights.categories.count)", "square.grid.2x2.fill")
-            stat("Largest", insights.largestName, "arrow.up.circle.fill",
-                 sub: ByteFormat.string(insights.topItems.first?.size ?? 0))
+            stat("Largest", ByteFormat.string(insights.topItems.first?.size ?? 0), "arrow.up.circle.fill",
+                 sub: insights.largestName)
         }
         .frame(height: 128)
     }
@@ -50,7 +53,7 @@ struct OverviewView: View {
             Label("Total used", systemImage: "internaldrive.fill")
                 .font(.caption).foregroundStyle(.secondary)
             Text(ByteFormat.string(insights.totalBytes))
-                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .font(statFont)
                 .foregroundStyle(LinearGradient(colors: [.brand, .brand2], startPoint: .leading, endPoint: .trailing))
                 .lineLimit(1).minimumScaleFactor(0.5)
             GeometryReader { g in
@@ -72,8 +75,8 @@ struct OverviewView: View {
         VStack(alignment: .leading, spacing: 4) {
             Label(label, systemImage: icon).font(.caption).foregroundStyle(.secondary)
             Spacer(minLength: 0)
-            Text(value).font(.title2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.5)
-            if let sub { Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+            Text(value).font(statFont).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+            if let sub { Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle) }
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)

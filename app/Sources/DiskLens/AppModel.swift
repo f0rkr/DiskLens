@@ -47,6 +47,8 @@ final class AppModel {
     var lastDelta: ScanDelta?        // what grew/shrank vs the previous scan of this folder
     var unreadableCount = 0          // directories skipped because they couldn't be read
     var availableUpdate: String?     // a newer release version, when the update check finds one
+    var isUpdating = false           // downloading/installing a self-update
+    var updateError: String?         // why a self-update attempt failed
 
     // Derived analyses (computed lazily after a scan / on demand)
     var duplicateGroups: [DuplicateGroup] = []
@@ -318,6 +320,20 @@ final class AppModel {
     func maybeCheckForUpdate() async {
         guard UserDefaults.standard.bool(forKey: "checkForUpdates") else { return }
         if let v = await UpdateChecker.latestIfNewer() { availableUpdate = v }
+    }
+
+    /// Download and install the latest release, then relaunch. On success the
+    /// app quits (a helper finishes the swap); on failure we surface the reason.
+    func installUpdate() async {
+        guard !isUpdating else { return }
+        isUpdating = true
+        updateError = nil
+        do {
+            try await Updater.installLatest()
+        } catch {
+            updateError = error.localizedDescription
+            isUpdating = false
+        }
     }
 
     // MARK: - Export

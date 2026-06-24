@@ -238,6 +238,7 @@ struct FullDiskAccessBanner: View {
 }
 
 /// Slim banner shown when the launch update check finds a newer release.
+/// "Install" downloads the new build and relaunches into it.
 struct UpdateBanner: View {
     @Environment(AppModel.self) private var model
     let version: String
@@ -245,13 +246,25 @@ struct UpdateBanner: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.brand)
-            Text("DiskLens \(version) is available.").font(.callout.weight(.medium))
-            Spacer()
-            Button("View Release") { NSWorkspace.shared.open(UpdateChecker.releasesPage) }
-                .controlSize(.small)
-            Button { model.availableUpdate = nil } label: { Image(systemName: "xmark") }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
-                .help("Dismiss")
+            if model.isUpdating {
+                ProgressView().controlSize(.small)
+                Text("Downloading DiskLens \(version)… the app will relaunch.")
+                    .font(.callout.weight(.medium))
+            } else if let err = model.updateError {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Text(err).font(.callout).lineLimit(2)
+            } else {
+                Text("DiskLens \(version) is available.").font(.callout.weight(.medium))
+            }
+            Spacer(minLength: 12)
+            if !model.isUpdating {
+                Button("Install") { Task { await model.installUpdate() } }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                Button("View") { NSWorkspace.shared.open(UpdateChecker.releasesPage) }
+                    .controlSize(.small)
+                Button { model.availableUpdate = nil } label: { Image(systemName: "xmark") }
+                    .buttonStyle(.plain).foregroundStyle(.secondary).help("Dismiss")
+            }
         }
         .padding(.horizontal, 16).padding(.vertical, 8)
         .background(Color.brand.opacity(0.10))

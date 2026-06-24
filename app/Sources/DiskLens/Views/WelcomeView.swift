@@ -12,14 +12,15 @@ struct WelcomeView: View {
     var body: some View {
         ZStack {
             aurora
-            VStack(spacing: 24) {
-                Spacer(minLength: 8)
+            VStack(spacing: 22) {
+                Spacer(minLength: 12)
                 hero
                 cta
-                Spacer(minLength: 8)
-                quick
-                if !model.recentFolders.isEmpty { recents }
-                Spacer(minLength: 8)
+                Spacer(minLength: 12)
+                VStack(spacing: 16) {
+                    quick
+                    if !model.recentFolders.isEmpty { recents }
+                }
             }
             .frame(maxWidth: 600)
             .padding(.horizontal, 40)
@@ -107,32 +108,30 @@ struct WelcomeView: View {
         }
     }
 
+    // Recents as a single horizontal strip of chips: it never grows taller (so
+    // the page can't scramble), and a long history just scrolls sideways.
     private var recents: some View {
         VStack(spacing: 8) {
             sectionLabel("Recent")
-            VStack(spacing: 0) {
-                ForEach(Array(model.recentFolders.prefix(4).enumerated()), id: \.element) { idx, url in
-                    if idx > 0 { Divider() }
-                    Button { model.scan(url) } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(url.lastPathComponent)
-                                Text(url.deletingLastPathComponent().path)
-                                    .font(.caption2).foregroundStyle(.tertiary)
-                                    .lineLimit(1).truncationMode(.middle)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(model.recentFolders.enumerated()), id: \.element) { _, url in
+                        Button { model.scan(url) } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Text(url.lastPathComponent).lineLimit(1)
                             }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
+                            .padding(.horizontal, 12).padding(.vertical, 8)
+                            .background(.regularMaterial, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
                         }
-                        .padding(.vertical, 8).padding(.horizontal, 12)
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .help(url.path)
                     }
-                    .buttonStyle(RowButtonStyle())
                 }
+                .padding(.horizontal, 2).padding(.vertical, 2)
             }
-            .card(12)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
