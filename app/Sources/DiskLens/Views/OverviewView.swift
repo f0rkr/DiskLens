@@ -6,6 +6,8 @@ import Charts
 struct OverviewView: View {
     let insights: ScanInsights
     var delta: ScanDelta? = nil
+    var history: [ScanSnapshot] = []
+    var diskStats: DiskStats? = nil
 
     private var catTotal: Int64 { max(1, insights.categories.reduce(0) { $0 + $1.bytes }) }
     private var maxTop: Int64 { insights.topItems.first?.size ?? 1 }
@@ -21,7 +23,7 @@ struct OverviewView: View {
                                        description: Text("This folder has no files to summarize."))
             } else {
                 VStack(spacing: 16) {
-                    if let d = delta, d.hasChanges { deltaBanner(d) }
+                    if let d = delta, d.hasChanges { historyCard(d) }
                     statRow
                     HStack(spacing: 16) {
                         byType
@@ -56,15 +58,29 @@ struct OverviewView: View {
                 .font(statFont)
                 .foregroundStyle(LinearGradient(colors: [.brand, .brand2], startPoint: .leading, endPoint: .trailing))
                 .lineLimit(1).minimumScaleFactor(0.5)
-            GeometryReader { g in
-                HStack(spacing: 2) {
-                    ForEach(insights.categories) { c in
-                        Rectangle().fill(c.color)
-                            .frame(width: max(2, g.size.width * CGFloat(c.bytes) / CGFloat(catTotal)))
+            Spacer(minLength: 0)
+            if let d = diskStats, d.total > 0 {
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.quaternary)
+                        Capsule().fill(Color.brand.gradient)
+                            .frame(width: g.size.width * CGFloat(d.used) / CGFloat(d.total))
                     }
                 }
+                .frame(height: 8)
+                Text("\(ByteFormat.string(d.free)) free of \(ByteFormat.string(d.total))")
+                    .font(.caption2).foregroundStyle(.secondary)
+            } else {
+                GeometryReader { g in
+                    HStack(spacing: 2) {
+                        ForEach(insights.categories) { c in
+                            Rectangle().fill(c.color)
+                                .frame(width: max(2, g.size.width * CGFloat(c.bytes) / CGFloat(catTotal)))
+                        }
+                    }
+                }
+                .frame(height: 8).clipShape(Capsule())
             }
-            .frame(height: 8).clipShape(Capsule())
         }
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -155,17 +171,16 @@ struct OverviewView: View {
 
     // MARK: - "what grew" since the last scan of this folder
 
-    private func deltaBanner(_ d: ScanDelta) -> some View {
+    private func historyCard(_ d: ScanDelta) -> some View {
         let grew = d.totalChange >= 0
         let accent = grew ? Color.orange : Color.green
-        return HStack(spacing: 10) {
+        return HStack(spacing: 12) {
             Image(systemName: grew ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill")
                 .foregroundStyle(accent)
             Text("\(grew ? "+" : "-")\(ByteFormat.string(abs(d.totalChange)))")
                 .font(.headline).foregroundStyle(accent)
             Text("since \(d.since.formatted(.relative(presentation: .named)))")
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 12)
+                .foregroundStyle(.secondary).lineLimit(1)
             ForEach(Array(d.changes.prefix(3).enumerated()), id: \.offset) { _, ch in
                 HStack(spacing: 4) {
                     Image(systemName: ch.delta >= 0 ? "arrow.up" : "arrow.down").font(.caption2)
@@ -177,10 +192,28 @@ struct OverviewView: View {
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(Color.primary.opacity(0.06), in: Capsule())
             }
+            Spacer(minLength: 12)
+            if history.count >= 2 {
+                trend.frame(width: 200, height: 42)
+            }
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .card(14)
+    }
+
+    /// Sparkline of this folder's total size across past scans.
+    private var trend: some View {
+        Chart(history, id: \.date) { snap in
+            AreaMark(x: .value("When", snap.date), y: .value("Size", Double(snap.totalBytes)))
+                .interpolationMethod(.monotone)
+                .foregroundStyle(LinearGradient(colors: [Color.brand.opacity(0.35), Color.brand.opacity(0.02)],
+                                                startPoint: .top, endPoint: .bottom))
+            LineMark(x: .value("When", snap.date), y: .value("Size", Double(snap.totalBytes)))
+                .interpolationMethod(.monotone)
+                .foregroundStyle(Color.brand)
+        }
+        .chartXAxis(.hidden).chartYAxis(.hidden).chartLegend(.hidden)
     }
 
     private func pct(_ b: Int64) -> String {

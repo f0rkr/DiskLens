@@ -65,12 +65,14 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     @Test func flagsExpectedItems() {
         let root = mkDir("proj", [
             mkDir("node_modules", [mkFile("index.js", 5_000_000)]),
+            mkDir(".venv", [mkFile("python", 9_000_000)]),
             mkFile(".DS_Store", 4096),
             mkFile("big.zip", 200 * 1024 * 1024),
             mkFile("notes.md", 1000),
         ])
         let s = CleanupRules.analyze(root)
         #expect(s.contains { $0.category == .buildArtifacts && $0.url.lastPathComponent == "node_modules" })
+        #expect(s.contains { $0.category == .buildArtifacts && $0.url.lastPathComponent == ".venv" })
         #expect(s.contains { $0.category == .junk && $0.url.lastPathComponent == ".DS_Store" })
         #expect(s.contains { $0.category == .largeArchives && $0.url.lastPathComponent == "big.zip" })
         #expect(!s.contains { $0.url.lastPathComponent == "notes.md" })

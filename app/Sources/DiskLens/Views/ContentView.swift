@@ -35,7 +35,8 @@ struct ContentView: View {
     @ViewBuilder
     private func sectionContent(root: FileNode) -> some View {
         switch model.selection {
-        case .overview:   OverviewView(insights: model.insights, delta: model.lastDelta)
+        case .overview:   OverviewView(insights: model.insights, delta: model.lastDelta,
+                                        history: model.lastHistory, diskStats: model.diskStats)
         case .breakdown:  BreakdownView(root: root)
         case .treemap:    TreemapView(root: root)
         case .files:      FilesView()

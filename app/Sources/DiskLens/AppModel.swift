@@ -45,6 +45,8 @@ final class AppModel {
     var selection: Section = .overview
     var insights = ScanInsights()
     var lastDelta: ScanDelta?        // what grew/shrank vs the previous scan of this folder
+    var lastHistory: [ScanSnapshot] = []   // saved snapshots of this folder, for the trend chart
+    var diskStats: DiskStats?        // free/total for the scanned folder's volume
     var unreadableCount = 0          // directories skipped because they couldn't be read
     var availableUpdate: String?     // a newer release version, when the update check finds one
     var isUpdating = false           // downloading/installing a self-update
@@ -135,6 +137,8 @@ final class AppModel {
         cleanupSuggestions = []
         lastActionMessage = nil
         lastDelta = nil
+        lastHistory = []
+        diskStats = nil
         unreadableCount = 0
 
         scanTask = Task.detached(priority: .userInitiated) { [weak self] in
@@ -153,6 +157,8 @@ final class AppModel {
             let insights = node.map { ScanInsights.compute(from: $0) } ?? ScanInsights()
             let cleanup = node.map { CleanupRules.analyze($0) } ?? []
             let delta = node.flatMap { ScanHistory.record($0, path: url.path) }
+            let history = ScanHistory.history(for: url.path)
+            let disk = DiskStats.current(for: url)
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 if !Task.isCancelled {
@@ -160,6 +166,8 @@ final class AppModel {
                     self.insights = insights
                     self.cleanupSuggestions = cleanup
                     self.lastDelta = delta
+                    self.lastHistory = history
+                    self.diskStats = disk
                     self.unreadableCount = deniedCount
                     self.lastActionMessage = self.pendingMessage
                     self.pendingMessage = nil
@@ -188,6 +196,8 @@ final class AppModel {
         cleanupSuggestions = []
         lastActionMessage = nil
         lastDelta = nil
+        lastHistory = []
+        diskStats = nil
         unreadableCount = 0
     }
 

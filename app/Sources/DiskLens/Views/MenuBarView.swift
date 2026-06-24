@@ -6,8 +6,7 @@ struct DiskStats {
     var free: Int64 = 0
     var used: Int64 { max(0, total - free) }
 
-    static func current() -> DiskStats {
-        let url = URL(fileURLWithPath: NSHomeDirectory())
+    static func current(for url: URL = URL(fileURLWithPath: NSHomeDirectory())) -> DiskStats {
         let v = try? url.resourceValues(forKeys: [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey])
         var s = DiskStats()
         s.total = Int64(v?.volumeTotalCapacity ?? 0)

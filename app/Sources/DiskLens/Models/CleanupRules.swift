@@ -37,9 +37,17 @@ struct CleanupSuggestion: Identifiable {
 enum CleanupRules {
     // Directory names whose entire contents are reclaimable build output.
     private static let buildDirs: Set<String> = [
-        "node_modules", ".next", "dist", "build", ".turbo", ".parcel-cache",
-        "target", ".gradle", "DerivedData", ".dart_tool", "Pods", "__pycache__",
-        ".pytest_cache", ".mypy_cache", ".cache"
+        // JS/web
+        "node_modules", ".next", ".nuxt", ".svelte-kit", ".expo", "dist", "build",
+        ".turbo", ".parcel-cache", ".angular", ".nyc_output",
+        // native / Apple
+        "DerivedData", "iOS DeviceSupport", "Pods", "Carthage", ".swiftpm",
+        // Rust / JVM / Go / Haskell / Elm
+        "target", ".gradle", ".stack-work", "elm-stuff",
+        // Python
+        "__pycache__", ".pytest_cache", ".mypy_cache", ".dart_tool", ".venv", "venv", ".tox",
+        // misc regenerable
+        ".terraform", ".cache"
     ]
     private static let cacheDirs: Set<String> = ["Caches", "Cache", ".npm", ".cache"]
     private static let junkExtensions: Set<String> = ["crdownload", "part", "download", "tmp"]

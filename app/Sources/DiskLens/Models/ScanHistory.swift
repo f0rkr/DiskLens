@@ -48,6 +48,9 @@ enum ScanHistory {
 
     // MARK: - persistence (UserDefaults, keyed by folder path)
 
+    /// All saved snapshots for a folder, oldest first.
+    static func history(for path: String) -> [ScanSnapshot] { loadAll()[path] ?? [] }
+
     private static func loadAll() -> [String: [ScanSnapshot]] {
         guard let data = UserDefaults.standard.data(forKey: key),
               let all = try? JSONDecoder().decode([String: [ScanSnapshot]].self, from: data)
