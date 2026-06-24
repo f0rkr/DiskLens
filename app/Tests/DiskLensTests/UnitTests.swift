@@ -164,6 +164,19 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - System stats (CPU / memory)
+
+@Suite struct SystemStatsTests {
+    @Test func samplesAreInRange() {
+        let sampler = SystemStats.Sampler()
+        _ = sampler.sample()              // prime CPU delta
+        let s = sampler.sample()
+        #expect(s.memTotal > 0)
+        #expect(s.memUsed >= 0 && s.memUsed <= s.memTotal)
+        #expect(s.cpuBusy >= 0 && s.cpuBusy <= 1)
+    }
+}
+
 // MARK: - Export report
 
 @Suite struct ReportBuilderTests {

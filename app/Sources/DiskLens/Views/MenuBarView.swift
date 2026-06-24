@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 
 struct DiskStats {
     var total: Int64 = 0
@@ -19,6 +20,9 @@ struct DiskStats {
 struct MenuBarView: View {
     let model: AppModel
     @State private var stats = DiskStats.current()
+    @State private var sampler = SystemStats.Sampler()
+    @State private var sys = SystemStats()
+    private let timer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
 
     private var usedFrac: CGFloat { stats.total > 0 ? CGFloat(stats.used) / CGFloat(stats.total) : 0 }
     private var usageColor: Color { usedFrac > 0.9 ? .red : (usedFrac > 0.75 ? .orange : .brand) }
@@ -51,15 +55,43 @@ struct MenuBarView: View {
 
             Divider()
 
+            VStack(spacing: 9) {
+                gauge("CPU", "cpu", "\(Int((sys.cpuBusy * 100).rounded()))%", sys.cpuBusy)
+                gauge("Memory", "memorychip",
+                      "\(ByteFormat.string(sys.memUsed)) of \(ByteFormat.string(sys.memTotal))", sys.memFrac)
+            }
+
+            Divider()
+
             menuButton("Open DiskLens", "macwindow") { activate() }
             menuButton("Scan Home Folder", "house") {
                 model.scan(FileManager.default.homeDirectoryForCurrentUser); activate()
             }
-            menuButton("Refresh", "arrow.clockwise") { stats = DiskStats.current() }
+            menuButton("Refresh", "arrow.clockwise") { stats = DiskStats.current(); sys = sampler.sample() }
         }
         .padding(16)
         .frame(width: 264)
-        .onAppear { stats = DiskStats.current() }
+        .onAppear { stats = DiskStats.current(); sys = sampler.sample() }
+        .onReceive(timer) { _ in sys = sampler.sample() }
+    }
+
+    private func gauge(_ label: String, _ icon: String, _ value: String, _ frac: Double) -> some View {
+        let c: Color = frac > 0.9 ? .red : (frac > 0.7 ? .orange : .brand)
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).foregroundStyle(.secondary).font(.caption)
+                Text(label).font(.caption.weight(.medium))
+                Spacer()
+                Text(value).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            GeometryReader { g in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.quaternary)
+                    Capsule().fill(c.gradient).frame(width: max(3, g.size.width * CGFloat(min(1, max(0, frac)))))
+                }
+            }
+            .frame(height: 7)
+        }
     }
 
     private func menuButton(_ title: String, _ icon: String, _ action: @escaping () -> Void) -> some View {
