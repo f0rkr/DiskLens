@@ -11,9 +11,10 @@ A fast, native macOS app that scans any folder and shows exactly where your spac
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black?logo=apple)
 ![Swift](https://img.shields.io/badge/Swift-6-orange?logo=swift)
-![Made with SwiftUI](https://img.shields.io/badge/UI-SwiftUI-1575F9)
+[![Release](https://github.com/f0rkr/DiskLens/actions/workflows/release.yml/badge.svg)](https://github.com/f0rkr/DiskLens/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/f0rkr/DiskLens?sort=semver)](https://github.com/f0rkr/DiskLens/releases/latest)
 
-[**🌐 Live site**](https://disklens-site.vercel.app) · [**⬇ Download (.dmg)**](https://disklens-site.vercel.app/downloads/DiskLens.dmg) · [**☕ Donate**](https://www.buymeacoffee.com/f0rkr)
+[**🌐 Live site**](https://disklens-site.vercel.app) · [**⬇ Download (.dmg)**](https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg) · [**☕ Donate**](https://www.buymeacoffee.com/f0rkr)
 
 <img src="docs/screenshot-treemap.svg" width="720" alt="DiskLens treemap" />
 
@@ -58,7 +59,7 @@ Built with `swiftc` directly (no Xcode required — Command Line Tools is enough
 
 ## 🚀 Install
 
-**Download:** grab the latest [`DiskLens.dmg`](https://disklens-site.vercel.app/downloads/DiskLens.dmg), open it, and drag **DiskLens** into **Applications**.
+**Download:** grab the latest [`DiskLens.dmg`](https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg) from [Releases](https://github.com/f0rkr/DiskLens/releases/latest), open it, and drag **DiskLens** into **Applications**.
 
 > **First launch (it isn't notarized yet):** macOS will block it the first time. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. Or run once:
 > ```bash
@@ -110,6 +111,17 @@ cd web
 npm install
 npm run dev      # development
 ```
+
+## 📦 Releases & CI
+
+GitHub Actions builds and ships the app automatically:
+
+| Trigger | Workflow | Result |
+|---|---|---|
+| push to `main` (or tag `v*.*.*`) | `release.yml` | builds on a macOS runner and publishes a versioned **GitHub Release** with `DiskLens.dmg` |
+| push to `dev` / `staging` | `dev.yml` | builds, uploads a `.dmg` artifact, and refreshes a rolling `dev-latest` pre-release |
+
+The site's **Download** points at [`releases/latest/download/DiskLens.dmg`](https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg), so production always serves the latest CI-built binary. Versioning comes from the [`VERSION`](VERSION) file (stamped into the app's `CFBundleShortVersionString`) — bump it and push `main`, or push a `vX.Y.Z` tag, to cut a release.
 
 ## 🤝 Contributing
 

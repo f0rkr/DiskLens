@@ -10,6 +10,7 @@ app/.iconbuild/
 app/assets/icon-preview.png
 
 # Next.js / web
+web/public/downloads/*.dmg   # shipped via GitHub Releases, not committed
 web/node_modules/
 web/.next/
 web/out/

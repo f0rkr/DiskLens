@@ -3,7 +3,7 @@ import Reveal from "./Reveal";
 import Tilt3D from "./Tilt3D";
 import Showcase3D from "./Showcase3D";
 
-const DOWNLOAD_URL = "/downloads/DiskLens.dmg";
+const DOWNLOAD_URL = "https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg";
 const DONATE_URL = "https://www.buymeacoffee.com/f0rkr";
 const QUARANTINE_CMD = "xattr -dr com.apple.quarantine /Applications/DiskLens.app";
 
