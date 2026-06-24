@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// The landing screen shown before a scan. A single, non-scrolling page: a
+/// brand hero over a soft aurora, the primary "choose a folder" call to action,
+/// quick-scan shortcuts, and recent folders.
 struct WelcomeView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -7,31 +10,25 @@ struct WelcomeView: View {
     @State private var dropTargeted = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 26) {
-                BrandMark(size: 78)
-                VStack(spacing: 8) {
-                    Text("DiskLens").font(.system(size: 34, weight: .bold))
-                    Text("See what's eating your disk, then reclaim it.")
-                        .font(.title3).foregroundStyle(.secondary)
-                }
-
-                Button { model.chooseFolder() } label: {
-                    Label("Choose a Folder to Scan", systemImage: "folder.badge.plus").padding(.horizontal, 8)
-                }
-                .controlSize(.large)
-                .buttonStyle(.borderedProminent)
-
-                dropZone
+        ZStack {
+            aurora
+            VStack(spacing: 24) {
+                Spacer(minLength: 8)
+                hero
+                cta
+                Spacer(minLength: 8)
                 quick
                 if !model.recentFolders.isEmpty { recents }
+                Spacer(minLength: 8)
             }
-            .frame(maxWidth: 560)
-            .padding(40)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 600)
+            .padding(.horizontal, 40)
+            .padding(.vertical, 28)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .opacity(appear ? 1 : 0)
-        .offset(y: appear ? 0 : 14)
+        .offset(y: appear ? 0 : 12)
         .onAppear {
             if reduceMotion { appear = true }
             else { withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) { appear = true } }
@@ -43,6 +40,39 @@ struct WelcomeView: View {
         } isTargeted: { dropTargeted = $0 }
     }
 
+    private var aurora: some View {
+        ZStack {
+            Circle().fill(Color.brand.opacity(0.20)).frame(width: 460).blur(radius: 130)
+                .offset(x: -180, y: -200)
+            Circle().fill(Color.brand2.opacity(0.18)).frame(width: 420).blur(radius: 130)
+                .offset(x: 200, y: 90)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
+    }
+
+    private var hero: some View {
+        VStack(spacing: 12) {
+            BrandMark(size: 68)
+            Text("DiskLens")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(LinearGradient(colors: [.brand, .brand2], startPoint: .leading, endPoint: .trailing))
+            Text("See what's eating your disk, then reclaim it.")
+                .font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        }
+    }
+
+    private var cta: some View {
+        VStack(spacing: 12) {
+            Button { model.chooseFolder() } label: {
+                Label("Choose a Folder to Scan", systemImage: "folder.badge.plus").padding(.horizontal, 8)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            dropZone
+        }
+    }
+
     private var dropZone: some View {
         HStack(spacing: 8) {
             Image(systemName: "arrow.down.doc")
@@ -50,12 +80,12 @@ struct WelcomeView: View {
         }
         .font(.callout)
         .foregroundStyle(dropTargeted ? Color.brand : .secondary)
-        .padding(.vertical, 14)
+        .padding(.vertical, 12).padding(.horizontal, 18)
         .frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
             .fill(dropTargeted ? Color.brand.opacity(0.12) : Color.clear))
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(dropTargeted ? Color.brand : Color.secondary.opacity(0.35),
+            .strokeBorder(dropTargeted ? Color.brand : Color.secondary.opacity(0.30),
                           style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
     }
 
@@ -69,7 +99,7 @@ struct WelcomeView: View {
                             Image(systemName: item.1).font(.title2).foregroundStyle(Color.brand)
                             Text(item.0).font(.caption).foregroundStyle(.primary)
                         }
-                        .frame(width: 84, height: 70)
+                        .frame(width: 88, height: 72)
                     }
                     .buttonStyle(CardButtonStyle())
                 }
@@ -81,7 +111,7 @@ struct WelcomeView: View {
         VStack(spacing: 8) {
             sectionLabel("Recent")
             VStack(spacing: 0) {
-                ForEach(Array(model.recentFolders.enumerated()), id: \.element) { idx, url in
+                ForEach(Array(model.recentFolders.prefix(4).enumerated()), id: \.element) { idx, url in
                     if idx > 0 { Divider() }
                     Button { model.scan(url) } label: {
                         HStack(spacing: 10) {

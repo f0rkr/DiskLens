@@ -11,7 +11,7 @@ welcome. This guide gets you from clone to green CI.
   will be declined unless there's a very strong reason.
 - **Cleanup must stay safe.** Anything that removes files must move them to the
   **Trash** (recoverable), never delete in place.
-- **Nothing leaves the device.** No telemetry, network calls, or analytics.
+- **Nothing about your files leaves the device.** No telemetry or analytics; the only network request is an optional update check (opt-out in Preferences).
 - Be kind, see our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Project layout

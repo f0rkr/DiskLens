@@ -141,7 +141,7 @@ The site's **Download** points at [`releases/latest/download/DiskLens.dmg`](http
 
 DiskLens is built to be safe by design:
 
-- **100% on-device**, no network calls, no telemetry, nothing leaves your Mac.
+- **100% on-device**, no telemetry or analytics, and your files and scan results never leave your Mac. The only network request is an optional update check you can switch off in Preferences.
 - **Zero third-party runtime dependencies**, Apple system frameworks only, so the supply-chain surface is tiny.
 - **Recoverable cleanup**, files are only ever moved to the **Trash**, never hard-deleted.
 

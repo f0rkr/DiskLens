@@ -150,6 +150,33 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - Update version comparison
+
+@Suite struct UpdateCheckerTests {
+    @Test func comparesVersions() {
+        #expect(UpdateChecker.isNewer("1.3.1", than: "1.3.0"))
+        #expect(UpdateChecker.isNewer("1.3.0", than: "1.2.9"))
+        #expect(UpdateChecker.isNewer("2.0.0", than: "1.9.9"))
+        #expect(!UpdateChecker.isNewer("1.3.0", than: "1.3.0"))
+        #expect(!UpdateChecker.isNewer("1.2.0", than: "1.3.0"))
+    }
+}
+
+// MARK: - Export report
+
+@Suite struct ReportBuilderTests {
+    @Test func includesTotalsAndTables() {
+        let root = mkDir("root", [mkFile("big.bin", 3_000_000), mkFile("a.png", 1_000_000)])
+        let insights = ScanInsights.compute(from: root)
+        let md = ReportBuilder.markdown(root: root, insights: insights, scannedRoot: nil,
+                                        date: Date(timeIntervalSince1970: 0))
+        #expect(md.contains("# DiskLens report"))
+        #expect(md.contains("Usage by type"))
+        #expect(md.contains("Largest files"))
+        #expect(md.contains("big.bin"))
+    }
+}
+
 // MARK: - In-app Bin (staged deletions)
 
 @Suite(.serialized) @MainActor struct BinTests {

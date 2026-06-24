@@ -6,6 +6,7 @@ import AppKit
 /// exact point-in-rect hit-testing, so the highlighted tile is always the one
 /// under the cursor.
 struct TreemapView: View {
+    @Environment(AppModel.self) private var model
     let root: FileNode
     @State private var stack: [FileNode] = []
     @State private var hoveredID: UUID?
@@ -49,6 +50,26 @@ struct TreemapView: View {
                         }
                     }
                 )
+                .contextMenu {
+                    if let n = hoveredNode {
+                        if n.childrenOrNil != nil {
+                            Button { withAnimation(.snappy) { stack.append(n); hoveredID = nil } } label: {
+                                Label("Zoom into \(n.name)", systemImage: "plus.magnifyingglass")
+                            }
+                        } else {
+                            Button { QuickLook.show(n.url) } label: { Label("Quick Look", systemImage: "eye") }
+                        }
+                        Button { NSWorkspace.shared.activateFileViewerSelecting([n.url]) } label: {
+                            Label("Reveal in Finder", systemImage: "folder")
+                        }
+                        Divider()
+                        if model.isInBin(n.url) {
+                            Button { model.removeFromBin(n.url) } label: { Label("Remove from Bin", systemImage: "xmark.bin") }
+                        } else {
+                            Button { model.addToBin(n) } label: { Label("Add to Bin", systemImage: "xmark.bin") }
+                        }
+                    }
+                }
                 .overlay {
                     if tiles.isEmpty {
                         Text("This folder is empty").foregroundStyle(.secondary)

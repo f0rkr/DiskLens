@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("useBinaryUnits") private var useBinary = false
     @AppStorage("archiveMinMB") private var archiveMinMB = 100
+    @AppStorage("checkForUpdates") private var checkForUpdates = true
 
     var body: some View {
         Form {
@@ -16,6 +17,11 @@ struct SettingsView: View {
                     Text("Flag archives larger than **\(archiveMinMB) MB**")
                 }
             }
+            Section("Updates") {
+                Toggle("Check for updates on launch", isOn: $checkForUpdates)
+                Text("Pings GitHub Releases for a newer version. It's the only network request DiskLens makes, and your files never leave your Mac.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Keyboard shortcuts") {
                 shortcut("Choose folder to scan", "⌘O")
                 shortcut("Rescan current folder", "⌘R")
@@ -24,7 +30,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440, height: 380)
+        .frame(width: 460, height: 470)
     }
 
     private func shortcut(_ label: String, _ key: String) -> some View {

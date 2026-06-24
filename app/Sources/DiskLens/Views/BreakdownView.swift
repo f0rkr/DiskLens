@@ -3,11 +3,18 @@ import SwiftUI
 struct BreakdownView: View {
     let root: FileNode
     @State private var search = ""
+    @State private var sort: BreakdownSort = .size
+
+    enum BreakdownSort: String { case size, name }
 
     private var items: [FileNode] {
-        search.isEmpty
+        let base = search.isEmpty
             ? root.children
             : root.children.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        switch sort {
+        case .size: return base   // root.children is already largest-first
+        case .name: return base.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
     }
 
     var body: some View {
@@ -19,6 +26,16 @@ struct BreakdownView: View {
                     Button { search = "" } label: { Image(systemName: "xmark.circle.fill") }
                         .buttonStyle(.plain).foregroundStyle(.secondary)
                 }
+                Menu {
+                    Picker("Sort", selection: $sort) {
+                        Text("Size").tag(BreakdownSort.size)
+                        Text("Name").tag(BreakdownSort.name)
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down").foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
             .card(10)
@@ -29,7 +46,7 @@ struct BreakdownView: View {
                                        description: Text("No items match “\(search)”."))
                     .frame(maxHeight: .infinity)
             } else {
-                PaginatedList(items: items, resetKey: AnyHashable(search), spacing: 2) { child, _ in
+                PaginatedList(items: items, resetKey: AnyHashable("\(search)|\(sort.rawValue)"), spacing: 2) { child, _ in
                     BreakdownRow(node: child, siblingMax: root.children.first?.size ?? 1, depth: 0)
                 }
             }

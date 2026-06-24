@@ -46,6 +46,7 @@ final class AppModel {
     var insights = ScanInsights()
     var lastDelta: ScanDelta?        // what grew/shrank vs the previous scan of this folder
     var unreadableCount = 0          // directories skipped because they couldn't be read
+    var availableUpdate: String?     // a newer release version, when the update check finds one
 
     // Derived analyses (computed lazily after a scan / on demand)
     var duplicateGroups: [DuplicateGroup] = []
@@ -71,6 +72,7 @@ final class AppModel {
     private var dupTask: Task<Void, Never>?
 
     init() {
+        UserDefaults.standard.register(defaults: ["checkForUpdates": true])
         loadRecents()
         loadBin()
     }
@@ -309,5 +311,33 @@ final class AppModel {
         let items = binItems.map { (url: $0.url, size: $0.size) }
         clearBin()
         trash(items)
+    }
+
+    // MARK: - Update check (opt-out in Preferences)
+
+    func maybeCheckForUpdate() async {
+        guard UserDefaults.standard.bool(forKey: "checkForUpdates") else { return }
+        if let v = await UpdateChecker.latestIfNewer() { availableUpdate = v }
+    }
+
+    // MARK: - Export
+
+    /// Save a Markdown report of the current scan to a file the user picks,
+    /// then reveal it in Finder.
+    func exportReport() {
+        guard let root = rootNode else { return }
+        let text = ReportBuilder.markdown(root: root, insights: insights, scannedRoot: scannedRoot, date: Date())
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "DiskLens-\(scannedRoot?.lastPathComponent ?? "scan").md"
+        panel.canCreateDirectories = true
+        panel.allowsOtherFileTypes = true
+        panel.title = "Export scan report"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } catch {
+            lastActionMessage = "Couldn't save the report: \(error.localizedDescription)"
+        }
     }
 }

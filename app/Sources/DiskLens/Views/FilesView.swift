@@ -25,6 +25,12 @@ struct FilesView: View {
     @Environment(AppModel.self) private var model
     @State private var oldOnly = false
     @State private var kind: FileColor.Kind?   // nil == All
+    @State private var sort: FileSort = .sizeDesc
+
+    enum FileSort: String, CaseIterable, Identifiable {
+        case sizeDesc = "Largest", nameAsc = "Name", newest = "Newest", oldest = "Oldest"
+        var id: String { rawValue }
+    }
 
     private var cutoff: Date { Calendar.current.date(byAdding: .year, value: -1, to: Date.now) ?? .distantPast }
 
@@ -39,8 +45,13 @@ struct FilesView: View {
         return order.filter { present.contains($0) }
     }
     private var files: [FileNode] {
-        guard let k = kind else { return base }
-        return base.filter { FileColor.kind(for: $0) == k }
+        let filtered = kind.map { k in base.filter { FileColor.kind(for: $0) == k } } ?? base
+        switch sort {
+        case .sizeDesc: return filtered   // base is already largest-first
+        case .nameAsc:  return filtered.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .newest:   return filtered.sorted { ($0.modifiedAt ?? .distantPast) > ($1.modifiedAt ?? .distantPast) }
+        case .oldest:   return filtered.sorted { ($0.modifiedAt ?? .distantFuture) < ($1.modifiedAt ?? .distantFuture) }
+        }
     }
     private var maxSize: Int64 { model.insights.topFiles.first?.size ?? 1 }
 
@@ -58,7 +69,7 @@ struct FilesView: View {
                     .frame(maxHeight: .infinity)
             } else {
                 PaginatedList(items: files,
-                              resetKey: AnyHashable("\(kind.map { "\($0)" } ?? "all")|\(oldOnly)")) { f, idx in
+                              resetKey: AnyHashable("\(kind.map { "\($0)" } ?? "all")|\(oldOnly)|\(sort.rawValue)")) { f, idx in
                     FileRow(file: f, rank: idx + 1, maxSize: maxSize)
                 }
             }
@@ -66,9 +77,18 @@ struct FilesView: View {
     }
 
     private var header: some View {
-        HStack {
+        HStack(spacing: 12) {
             Text("Largest files").font(.headline)
             Spacer()
+            Menu {
+                Picker("Sort", selection: $sort) {
+                    ForEach(FileSort.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.inline)
+            } label: {
+                Label("Sort: \(sort.rawValue)", systemImage: "arrow.up.arrow.down")
+            }
+            .menuStyle(.borderlessButton).fixedSize()
             Toggle(isOn: $oldOnly.animation(.snappy)) {
                 Label("Old only (1y+)", systemImage: "clock.badge.exclamationmark")
             }

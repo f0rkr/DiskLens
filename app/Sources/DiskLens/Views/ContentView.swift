@@ -5,24 +5,31 @@ struct ContentView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Group {
-            if model.isScanning && model.rootNode == nil {
-                ScanProgressView()
-            } else if let root = model.rootNode {
-                VStack(spacing: 0) {
-                    TopBar()
-                    if model.unreadableCount > 0 {
-                        FullDiskAccessBanner(count: model.unreadableCount)
-                    }
-                    sectionContent(root: root)
-                        .id(root.id)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            } else {
-                WelcomeView()
-            }
+        VStack(spacing: 0) {
+            if let v = model.availableUpdate { UpdateBanner(version: v) }
+            content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task { await model.maybeCheckForUpdate() }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if model.isScanning && model.rootNode == nil {
+            ScanProgressView()
+        } else if let root = model.rootNode {
+            VStack(spacing: 0) {
+                TopBar()
+                if model.unreadableCount > 0 {
+                    FullDiskAccessBanner(count: model.unreadableCount)
+                }
+                sectionContent(root: root)
+                    .id(root.id)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        } else {
+            WelcomeView()
+        }
     }
 
     @ViewBuilder
@@ -67,6 +74,12 @@ struct TopBar: View {
             Spacer(minLength: 12)
             tabs.layoutPriority(1)
             Spacer(minLength: 12)
+
+            Button { model.exportReport() } label: {
+                Image(systemName: "square.and.arrow.up").font(.body.weight(.semibold))
+            }
+            .buttonStyle(HoverIconStyle())
+            .help("Export a report of this scan")
 
             Button { if let u = model.scannedRoot { model.scan(u) } } label: {
                 Image(systemName: "arrow.clockwise").font(.body.weight(.semibold))
@@ -221,5 +234,27 @@ struct FullDiskAccessBanner: View {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+/// Slim banner shown when the launch update check finds a newer release.
+struct UpdateBanner: View {
+    @Environment(AppModel.self) private var model
+    let version: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.brand)
+            Text("DiskLens \(version) is available.").font(.callout.weight(.medium))
+            Spacer()
+            Button("View Release") { NSWorkspace.shared.open(UpdateChecker.releasesPage) }
+                .controlSize(.small)
+            Button { model.availableUpdate = nil } label: { Image(systemName: "xmark") }
+                .buttonStyle(.plain).foregroundStyle(.secondary)
+                .help("Dismiss")
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(Color.brand.opacity(0.10))
+        .overlay(alignment: .bottom) { Divider() }
     }
 }
