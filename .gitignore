@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Swift app build artifacts
+app/.build/
+app/DiskLens.app/
+app/DiskLens.dmg
+app/DiskLens.iconset/
+app/.iconbuild/
+app/assets/icon-preview.png
+
+# Next.js / web
+web/node_modules/
+web/.next/
+web/out/
+web/.vercel/
+web/*.tsbuildinfo
+
+# misc
+*.log
+node_modules/

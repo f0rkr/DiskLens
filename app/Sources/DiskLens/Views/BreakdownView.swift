@@ -1,0 +1,126 @@
+import SwiftUI
+
+struct BreakdownView: View {
+    let root: FileNode
+    @State private var search = ""
+
+    private var items: [FileNode] {
+        search.isEmpty
+            ? Array(root.children.prefix(300))
+            : root.children.filter { $0.name.localizedCaseInsensitiveContains(search) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Filter top-level items", text: $search).textFieldStyle(.plain)
+                if !search.isEmpty {
+                    Button { search = "" } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.plain).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .card(10)
+            .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(items) { child in
+                        BreakdownRow(node: child, siblingMax: root.children.first?.size ?? 1, depth: 0)
+                    }
+                    if search.isEmpty && root.children.count > 300 {
+                        Text("+ \(root.children.count - 300) more items…")
+                            .font(.caption).foregroundStyle(.tertiary)
+                            .padding(.leading, 30).padding(.vertical, 4)
+                    } else if !search.isEmpty && items.isEmpty {
+                        Text("No items match “\(search)”.")
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity).padding(.top, 40)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+}
+
+private struct BreakdownRow: View {
+    let node: FileNode
+    let siblingMax: Int64
+    let depth: Int
+    @State private var expanded = false
+
+    private var fraction: CGFloat {
+        siblingMax > 0 ? CGFloat(node.size) / CGFloat(siblingMax) : 0
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rowContent
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if node.childrenOrNil != nil { withAnimation(.snappy) { expanded.toggle() } }
+                }
+                .contextMenu {
+                    Button("Reveal in Finder") {
+                        NSWorkspace.shared.activateFileViewerSelecting([node.url])
+                    }
+                }
+
+            if expanded, let children = node.childrenOrNil {
+                ForEach(children.prefix(250)) { child in
+                    BreakdownRow(node: child,
+                                 siblingMax: children.first?.size ?? 1,
+                                 depth: depth + 1)
+                }
+                if children.count > 250 {
+                    Text("+ \(children.count - 250) more…")
+                        .font(.caption).foregroundStyle(.tertiary)
+                        .padding(.leading, CGFloat(depth + 1) * 18 + 30)
+                        .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
+    private var rowContent: some View {
+        HStack(spacing: 8) {
+            Image(systemName: node.childrenOrNil != nil
+                  ? (expanded ? "chevron.down" : "chevron.right")
+                  : "circle.fill")
+                .font(node.childrenOrNil != nil ? .caption : .system(size: 5))
+                .foregroundStyle(node.childrenOrNil != nil ? Color.secondary : FileColor.color(for: node))
+                .frame(width: 12)
+
+            Image(systemName: node.isDirectory ? "folder.fill" : "doc")
+                .foregroundStyle(node.isDirectory ? Color.accentColor : .secondary)
+                .font(.callout)
+
+            Text(node.name)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer(minLength: 12)
+
+            // Size bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.quaternary)
+                    Capsule()
+                        .fill(FileColor.color(for: node).gradient)
+                        .frame(width: max(2, geo.size.width * fraction))
+                }
+            }
+            .frame(width: 140, height: 7)
+
+            Text(ByteFormat.string(node.size))
+                .font(.callout.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 78, alignment: .trailing)
+        }
+        .padding(.vertical, 5)
+        .padding(.trailing, 16)
+        .padding(.leading, CGFloat(depth) * 18 + 12)
+    }
+}
