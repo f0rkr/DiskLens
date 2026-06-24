@@ -1,0 +1,57 @@
+name: CI
+
+# Continuous integration: run the Swift test suite and build the website on
+# every PR and every push to a long-lived branch. These are the checks that
+# gate merging into main (see branch protection).
+on:
+  push:
+    branches: [main, dev, staging]
+  pull_request:
+    branches: [main, dev, staging]
+  workflow_dispatch:
+
+# A newer push to the same branch/PR cancels the older, still-running job.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  app-tests:
+    name: App tests (Swift)
+    runs-on: macos-15            # Xcode 16 / Swift 6 — matches the dev toolchain
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app && swift --version
+
+      - name: Run unit + integration tests
+        run: cd app && bash run-tests.sh
+
+  web-build:
+    name: Web build (Next.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_ENV: production

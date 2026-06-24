@@ -1,0 +1,29 @@
+name: ✨ Feature request
+description: Suggest an idea for DiskLens
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      placeholder: I'm always trying to find … but DiskLens doesn't …
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like DiskLens to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Fits DiskLens's principles
+      options:
+        - label: Works fully on-device (no network/telemetry)
+        - label: Doesn't require adding a third-party runtime dependency to the app

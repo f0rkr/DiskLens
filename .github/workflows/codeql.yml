@@ -1,0 +1,55 @@
+name: CodeQL
+
+# Static analysis (SAST). Scans the Swift app and the JavaScript/TypeScript
+# website for security vulnerabilities and risky code patterns. Results surface
+# in the repo's Security → Code scanning tab.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * 1"   # weekly, Monday 05:23 UTC
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: swift
+            os: macos-15
+            build-mode: manual
+          - language: javascript-typescript
+            os: ubuntu-latest
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        if: matrix.language == 'swift'
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-and-quality
+
+      - name: Build Swift package
+        if: matrix.build-mode == 'manual'
+        run: cd app && swift build
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

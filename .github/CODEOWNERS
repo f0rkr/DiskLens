@@ -1,0 +1,3 @@
+# Default owner for everything in the repo.
+# Required reviewers are drawn from here when branch protection is enabled.
+* @f0rkr

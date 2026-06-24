@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/f0rkr/DiskLens/security/advisories/new
+    about: Please report security issues privately, not as a public issue.
+  - name: ☕ Support the project
+    url: https://www.buymeacoffee.com/f0rkr
+    about: DiskLens is free and open source — buy me a coffee if it helped.

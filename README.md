@@ -11,6 +11,8 @@ A fast, native macOS app that scans any folder and shows exactly where your spac
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-black?logo=apple)
 ![Swift](https://img.shields.io/badge/Swift-6-orange?logo=swift)
+[![CI](https://github.com/f0rkr/DiskLens/actions/workflows/ci.yml/badge.svg)](https://github.com/f0rkr/DiskLens/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/f0rkr/DiskLens/actions/workflows/codeql.yml/badge.svg)](https://github.com/f0rkr/DiskLens/actions/workflows/codeql.yml)
 [![Release](https://github.com/f0rkr/DiskLens/actions/workflows/release.yml/badge.svg)](https://github.com/f0rkr/DiskLens/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/f0rkr/DiskLens?sort=semver)](https://github.com/f0rkr/DiskLens/releases/latest)
 
@@ -82,6 +84,18 @@ open DiskLens.app
 
 `notarize.sh` is included for signing + notarizing if you have an Apple Developer ID.
 
+## 🧪 Testing
+
+Unit + integration tests live in `app/Tests/DiskLensTests/` and use Swift's modern **swift-testing** framework. They cover the squarified treemap layout, file-type categorization, cleanup rules, insights aggregation, byte formatting, and a real-filesystem end-to-end scan → duplicate-finder → insights pipeline.
+
+```bash
+cd app
+./run-tests.sh                      # run the whole suite
+./run-tests.sh --filter Squarify    # run a subset
+```
+
+`run-tests.sh` auto-detects your toolchain (plain `swift test` under full Xcode; injects the swift-testing framework path on a Command Line Tools–only setup). **CI runs this exact script** on every push and pull request.
+
 ## 📁 Project structure
 
 ```
@@ -123,9 +137,28 @@ GitHub Actions builds and ships the app automatically:
 
 The site's **Download** points at [`releases/latest/download/DiskLens.dmg`](https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg), so production always serves the latest CI-built binary. Versioning comes from the [`VERSION`](VERSION) file (stamped into the app's `CFBundleShortVersionString`) — bump it and push `main`, or push a `vX.Y.Z` tag, to cut a release.
 
+## 🔒 Security
+
+DiskLens is built to be safe by design:
+
+- **100% on-device** — no network calls, no telemetry, nothing leaves your Mac.
+- **Zero third-party runtime dependencies** — Apple system frameworks only, so the supply-chain surface is tiny.
+- **Recoverable cleanup** — files are only ever moved to the **Trash**, never hard-deleted.
+
+The project is continuously scanned in CI:
+
+| Pipeline | What it does |
+|---|---|
+| **CodeQL** (`codeql.yml`) | SAST for Swift + JavaScript/TypeScript on every push, PR, and weekly |
+| **Secret scan** (`secret-scan.yml`) | gitleaks across the full history and every change |
+| **Dependency review** (`dependency-review.yml`) | blocks PRs that introduce vulnerable/incompatible deps |
+| **Dependabot** (`dependabot.yml`) | weekly automated dependency + GitHub Actions updates |
+
+Found a vulnerability? Please report it privately — see [SECURITY.md](SECURITY.md).
+
 ## 🤝 Contributing
 
-Issues and PRs welcome. The app has no external dependencies, so `cd app && ./run.sh` is all you need to start hacking.
+Issues and PRs are welcome! The app has no external dependencies, so `cd app && ./run.sh` is all you need to start hacking, and `./run-tests.sh` runs the suite. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first — it covers the build, tests, and PR checklist — and our [Code of Conduct](CODE_OF_CONDUCT.md). CI (tests, web build, CodeQL, secret scan, dependency review) must be green before a PR is merged.
 
 ## ☕ Support
 
