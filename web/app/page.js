@@ -225,7 +225,12 @@ export default function Home() {
 
       <footer className="site-footer">
         <div className="container footer-row">
-          <span>© {new Date().getFullYear()} DiskLens · Made for cluttered Macs</span>
+          <span>
+            © {new Date().getFullYear()} DiskLens · Made for cluttered Macs
+            {process.env.NEXT_PUBLIC_APP_ENV && process.env.NEXT_PUBLIC_APP_ENV !== "production" && (
+              <span className="env-badge">{process.env.NEXT_PUBLIC_APP_ENV}</span>
+            )}
+          </span>
           <span className="footer-links">
             <a href="#features">Features</a>
             <a href="#download">Download</a>

@@ -292,6 +292,7 @@ h2 { font-size: clamp(30px, 4.4vw, 48px); letter-spacing: -0.03em; font-weight: 
 .site-footer { border-top: 1px solid var(--border); padding: 34px 0; }
 .footer-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; color: var(--faint); font-size: 13.5px; }
 .footer-links { display: flex; gap: 24px; }
+.env-badge { margin-left: 10px; padding: 2px 8px; border-radius: 999px; background: rgba(91, 140, 255, 0.18); color: #a9c0ff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 .footer-links a:hover { color: var(--fg); }
 
 /* ============ animations ============ */
