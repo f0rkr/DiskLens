@@ -4,7 +4,7 @@
 
 # DiskLens
 
-**See what's eating your Mac's disk — then reclaim it.**
+**See what's eating your Mac's disk, then reclaim it.**
 
 A fast, native macOS app that scans any folder and shows exactly where your space went: a visual treemap, a duplicate finder, a largest-files view, and one-click cleanup. No Electron. Nothing leaves your Mac.
 
@@ -30,34 +30,34 @@ A fast, native macOS app that scans any folder and shows exactly where your spac
 |---|---|---|
 | 📊 | **Overview** | Total usage, a colorful by-type donut, and your largest items at a glance. |
 | 🗂 | **Folder breakdown** | Drill into any folder as a tree, sorted largest-first, with size bars and a search filter. |
-| 🟦 | **Visual treemap** | Each rectangle's area is its disk usage — big space-eaters pop out. Click any tile to zoom in. |
-| 📄 | **Largest files** | The single biggest files anywhere, ranked — with an **"old & large"** filter (big files untouched 1y+). |
+| 🟦 | **Visual treemap** | Each rectangle's area is its disk usage. Big space-eaters pop out. Click any tile to zoom in. |
+| 📄 | **Largest files** | The single biggest files anywhere, ranked, with an **"old & large"** filter (big files untouched 1y+). |
 | 📑 | **Duplicate finder** | Byte-identical files found via SHA-256 (size-bucketed first, so it's fast), with reclaimable space. |
 | ✨ | **Smart cleanup** | Flags caches, `node_modules`/build dirs, junk (`.DS_Store`), and big archives → moves them to the Trash. |
 
 **Also:**
 
-- 🧭 **Menu-bar overview** — free space at a glance, plus quick scan, right from the menu bar.
-- 👁 **Quick Look + Undo** — preview any file inline; undo a cleanup instantly (everything goes to the Trash, never an unrecoverable delete).
+- 🧭 **Menu-bar overview**, free space at a glance, plus quick scan, right from the menu bar.
+- 👁 **Quick Look + Undo**, preview any file inline; undo a cleanup instantly (everything goes to the Trash, never an unrecoverable delete).
 - 🎯 **Drag & drop** a folder onto the app to scan it. **Recent folders** for one-click re-scans.
-- ⚙️ **Preferences** — decimal/binary units, cleanup thresholds, and keyboard shortcuts (⌘O / ⌘R / ⌘,).
+- ⚙️ **Preferences**, decimal/binary units, cleanup thresholds, and keyboard shortcuts (⌘O / ⌘R / ⌘,).
 - 🪶 Native & **tiny** (under 1 MB), **100% on-device**, free and open source.
 
 ## 🔍 How it works
 
-- **Scan engine** (`Models/ScanEngine.swift`) walks the directory tree with `FileManager`, summing **allocated** size (`totalFileAllocatedSize` — real on-disk usage) and **never follows symlinks**, so nothing is double-counted. It's cancellable and reports live progress.
+- **Scan engine** (`Models/ScanEngine.swift`) walks the directory tree with `FileManager`, summing **allocated** size (`totalFileAllocatedSize`, real on-disk usage) and **never follows symlinks**, so nothing is double-counted. It's cancellable and reports live progress.
 - **Aggregation** (`Models/ScanInsights.swift`) computes the by-type donut, largest items, and largest files **off the main actor** after a scan, so the UI never walks the tree while rendering.
-- **Treemap** is a **squarified** layout (Bruls–Huizing–van Wijk, `Utilities/Squarify.swift`) drawn in a single `Canvas` for speed, with exact point-in-rect hit-testing.
+- **Treemap** is a **squarified** layout (Bruls, Huizing, and van Wijk, `Utilities/Squarify.swift`) drawn in a single `Canvas` for speed, with exact point-in-rect hit-testing.
 - **Duplicates** (`Models/DuplicateFinder.swift`) bucket files by size first, then compare candidates with a streaming **SHA-256** (CryptoKit) so large files never load fully into memory.
 - **Cleanup** (`Models/CleanupRules.swift`) is rule-based and only ever moves items to the **Trash** (recoverable).
 
 ## 📦 Tech & packages
 
-**App** — pure **SwiftUI**, zero external dependencies. Uses only Apple system frameworks:
+**App**, pure **SwiftUI**, zero external dependencies. Uses only Apple system frameworks:
 `SwiftUI`, `AppKit`, `Charts` (Swift Charts), `CryptoKit`, `Foundation`, `Quartz`/Quick Look.
-Built with `swiftc` directly (no Xcode required — Command Line Tools is enough) and bundled into a `.app` by hand.
+Built with `swiftc` directly (no Xcode required, Command Line Tools is enough) and bundled into a `.app` by hand.
 
-**Website** (`web/`) — **Next.js 16** + **React 19**, hand-written CSS (no UI framework), deployed on **Vercel**.
+**Website** (`web/`), **Next.js 16** + **React 19**, hand-written CSS (no UI framework), deployed on **Vercel**.
 
 ## 🚀 Install
 
@@ -70,7 +70,7 @@ Built with `swiftc` directly (no Xcode required — Command Line Tools is enough
 
 ## 🛠 Build from source
 
-Requires macOS 14+ and the Swift toolchain (`xcode-select --install` — no full Xcode needed).
+Requires macOS 14+ and the Swift toolchain (`xcode-select --install`, no full Xcode needed).
 
 ```bash
 cd app
@@ -94,7 +94,7 @@ cd app
 ./run-tests.sh --filter Squarify    # run a subset
 ```
 
-`run-tests.sh` auto-detects your toolchain (plain `swift test` under full Xcode; injects the swift-testing framework path on a Command Line Tools–only setup). **CI runs this exact script** on every push and pull request.
+`run-tests.sh` auto-detects your toolchain (plain `swift test` under full Xcode; injects the swift-testing framework path on a Command Line Tools-only setup). **CI runs this exact script** on every push and pull request.
 
 ## 📁 Project structure
 
@@ -135,15 +135,15 @@ GitHub Actions builds and ships the app automatically:
 | push to `main` (or tag `v*.*.*`) | `release.yml` | builds on a macOS runner and publishes a versioned **GitHub Release** with `DiskLens.dmg` |
 | push to `dev` / `staging` | `dev.yml` | builds, uploads a `.dmg` artifact, and refreshes a rolling `dev-latest` pre-release |
 
-The site's **Download** points at [`releases/latest/download/DiskLens.dmg`](https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg), so production always serves the latest CI-built binary. Versioning comes from the [`VERSION`](VERSION) file (stamped into the app's `CFBundleShortVersionString`) — bump it and push `main`, or push a `vX.Y.Z` tag, to cut a release.
+The site's **Download** points at [`releases/latest/download/DiskLens.dmg`](https://github.com/f0rkr/DiskLens/releases/latest/download/DiskLens.dmg), so production always serves the latest CI-built binary. Versioning comes from the [`VERSION`](VERSION) file (stamped into the app's `CFBundleShortVersionString`), bump it and push `main`, or push a `vX.Y.Z` tag, to cut a release.
 
 ## 🔒 Security
 
 DiskLens is built to be safe by design:
 
-- **100% on-device** — no network calls, no telemetry, nothing leaves your Mac.
-- **Zero third-party runtime dependencies** — Apple system frameworks only, so the supply-chain surface is tiny.
-- **Recoverable cleanup** — files are only ever moved to the **Trash**, never hard-deleted.
+- **100% on-device**, no network calls, no telemetry, nothing leaves your Mac.
+- **Zero third-party runtime dependencies**, Apple system frameworks only, so the supply-chain surface is tiny.
+- **Recoverable cleanup**, files are only ever moved to the **Trash**, never hard-deleted.
 
 The project is continuously scanned in CI:
 
@@ -154,11 +154,11 @@ The project is continuously scanned in CI:
 | **Dependency review** (`dependency-review.yml`) | blocks PRs that introduce vulnerable/incompatible deps |
 | **Dependabot** (`dependabot.yml`) | weekly automated dependency + GitHub Actions updates |
 
-Found a vulnerability? Please report it privately — see [SECURITY.md](SECURITY.md).
+Found a vulnerability? Please report it privately, see [SECURITY.md](SECURITY.md).
 
 ## 🤝 Contributing
 
-Issues and PRs are welcome! The app has no external dependencies, so `cd app && ./run.sh` is all you need to start hacking, and `./run-tests.sh` runs the suite. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first — it covers the build, tests, and PR checklist — and our [Code of Conduct](CODE_OF_CONDUCT.md). CI (tests, web build, CodeQL, secret scan, dependency review) must be green before a PR is merged.
+Issues and PRs are welcome! The app has no external dependencies, so `cd app && ./run.sh` is all you need to start hacking, and `./run-tests.sh` runs the suite. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first, it covers the build, tests, and PR checklist, and our [Code of Conduct](CODE_OF_CONDUCT.md). CI (tests, web build, CodeQL, secret scan, dependency review) must be green before a PR is merged.
 
 ## ☕ Support
 

@@ -12,19 +12,19 @@ welcome. This guide gets you from clone to green CI.
 - **Cleanup must stay safe.** Anything that removes files must move them to the
   **Trash** (recoverable), never delete in place.
 - **Nothing leaves the device.** No telemetry, network calls, or analytics.
-- Be kind — see our [Code of Conduct](CODE_OF_CONDUCT.md).
+- Be kind, see our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Project layout
 
 ```
-app/   # native macOS app (SwiftUI) — Sources/DiskLens/{App,Models,Views,Utilities}, Tests/
+app/   # native macOS app (SwiftUI), Sources/DiskLens/{App,Models,Views,Utilities}, Tests/
 web/   # Next.js landing site (deployed to Vercel)
 docs/  # images used by the README
 ```
 
 ## Building the app
 
-Requires macOS 14+ and the Swift toolchain (`xcode-select --install` — no full
+Requires macOS 14+ and the Swift toolchain (`xcode-select --install`, no full
 Xcode required for building/running).
 
 ```bash
@@ -46,7 +46,7 @@ cd app
 ```
 
 `run-tests.sh` auto-detects your toolchain: with full Xcode it's just
-`swift test`; on a Command Line Tools–only setup it injects the swift-testing
+`swift test`; on a Command Line Tools-only setup it injects the swift-testing
 framework search path for you. **CI runs this same script**, so if it's green
 locally it'll be green in CI.
 

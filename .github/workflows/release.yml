@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15            # Xcode 16 / Swift 6 — matches the dev toolchain
+    runs-on: macos-15            # Xcode 16 / Swift 6, matches the dev toolchain
     steps:
       - uses: actions/checkout@v4
 

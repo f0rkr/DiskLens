@@ -21,7 +21,7 @@ permissions:
 jobs:
   app-tests:
     name: App tests (Swift)
-    runs-on: macos-15            # Xcode 16 / Swift 6 — matches the dev toolchain
+    runs-on: macos-15            # Xcode 16 / Swift 6, matches the dev toolchain
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

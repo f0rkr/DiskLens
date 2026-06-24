@@ -1,6 +1,6 @@
 # Security Policy
 
-DiskLens runs entirely **on your Mac** — it never uploads your files, file names,
+DiskLens runs entirely **on your Mac**, it never uploads your files, file names,
 or scan results anywhere, and it ships with **zero third-party runtime
 dependencies** (only Apple system frameworks). Cleanup actions only ever move
 items to the **Trash**, never an unrecoverable delete. Even so, we take security
@@ -8,7 +8,7 @@ seriously and welcome reports.
 
 ## Supported versions
 
-DiskLens is shipped as a rolling release — the latest published
+DiskLens is shipped as a rolling release, the latest published
 [release](https://github.com/f0rkr/DiskLens/releases/latest) is the only
 supported version. Please reproduce issues against the latest build before
 reporting.
@@ -38,9 +38,9 @@ You can expect:
 
 In scope:
 
-- The macOS app (`app/`) — e.g. path-traversal, unsafe file handling, privilege issues, anything that could delete data outside the Trash or read files the user didn't choose.
-- The website (`web/`) — e.g. XSS, dependency vulnerabilities, supply-chain risks.
-- CI/CD workflows (`.github/`) — e.g. token exposure, injection.
+- The macOS app (`app/`), e.g. path-traversal, unsafe file handling, privilege issues, anything that could delete data outside the Trash or read files the user didn't choose.
+- The website (`web/`), e.g. XSS, dependency vulnerabilities, supply-chain risks.
+- CI/CD workflows (`.github/`), e.g. token exposure, injection.
 
 Out of scope:
 
