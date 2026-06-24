@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 import { ChartsMock, BreakdownMock, TreemapMock, FilesMock, DuplicatesMock, CleanupMock } from "./mockups";
 
 const SCREENS = [
-  { mock: <ChartsMock />, title: "Visual overview", desc: "Usage by file type at a glance — a donut plus your largest items." },
+  { mock: <ChartsMock />, title: "Visual overview", desc: "Usage by file type as a donut, plus your largest items." },
   { mock: <BreakdownMock />, title: "Folder breakdown", desc: "Every folder as a tree, sorted largest-first, with size bars." },
-  { mock: <TreemapMock />, title: "Visual treemap", desc: "Each rectangle is its disk usage — the big hogs pop out. Click to zoom." },
-  { mock: <FilesMock />, title: "Largest files", desc: "The single biggest files anywhere — plus an 'old & large' filter for the safest deletes." },
+  { mock: <TreemapMock />, title: "Visual treemap", desc: "Each rectangle is its disk usage. The big hogs pop out, click to zoom." },
+  { mock: <FilesMock />, title: "Largest files", desc: "The single biggest files anywhere, plus an 'old & large' filter for the safest deletes." },
   { mock: <DuplicatesMock />, title: "Duplicate finder", desc: "Byte-identical files found by SHA-256, with the space you'd reclaim." },
-  { mock: <CleanupMock />, title: "Smart cleanup", desc: "Caches, node_modules, junk & old archives — moved to the Trash safely." },
+  { mock: <CleanupMock />, title: "Smart cleanup", desc: "Caches, node_modules, junk & old archives, moved to the Trash safely." },
 ];
 
 /// Apple-style 3D coverflow. As you scroll the pinned section, the deck of glass

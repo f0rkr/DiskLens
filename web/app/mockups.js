@@ -22,7 +22,7 @@ export function TreemapMock() {
   ];
   return (
     <div className="window">
-      <Dots title="DiskLens — Treemap" />
+      <Dots title="DiskLens · Treemap" />
       <div className="window-body">
         <svg viewBox="0 0 560 360" role="img" aria-label="Treemap view">
           <rect width="560" height="360" fill="#0b0f19" />
@@ -51,7 +51,7 @@ export function ChartsMock() {
     "conic-gradient(#ed8c4d 0 50%, #5cc78d 50% 69%, #8c80ea 69% 84%, #e0666f 84% 94%, #8c95a0 94% 100%)";
   return (
     <div className="window">
-      <Dots title="DiskLens — Overview" />
+      <Dots title="DiskLens · Overview" />
       <div className="window-body mock-pad mock-charts">
         <div className="donut" style={{ background: donut }}>
           <span className="donut-hole"><b>16.4 GB</b><small>total</small></span>
@@ -81,7 +81,7 @@ export function BreakdownMock() {
   ];
   return (
     <div className="window">
-      <Dots title="DiskLens — Breakdown" />
+      <Dots title="DiskLens · Breakdown" />
       <div className="window-body mock-pad">
         {rows.map((r) => (
           <div className="brk-row" key={r.n}>
@@ -107,7 +107,7 @@ export function FilesMock() {
   ];
   return (
     <div className="window">
-      <Dots title="DiskLens — Largest files" />
+      <Dots title="DiskLens · Largest files" />
       <div className="window-body mock-pad">
         {rows.map((r, i) => (
           <div className="brk-row" key={r.n}>
@@ -131,7 +131,7 @@ export function DuplicatesMock() {
   ];
   return (
     <div className="window">
-      <Dots title="DiskLens — Duplicates" />
+      <Dots title="DiskLens · Duplicates" />
       <div className="window-body mock-pad">
         {groups.map((g) => (
           <div className="dup-row" key={g.n}>
@@ -155,7 +155,7 @@ export function CleanupMock() {
   ];
   return (
     <div className="window">
-      <Dots title="DiskLens — Cleanup" />
+      <Dots title="DiskLens · Cleanup" />
       <div className="window-body mock-pad">
         {items.map((i) => (
           <div className="cln-row" key={i.n}>

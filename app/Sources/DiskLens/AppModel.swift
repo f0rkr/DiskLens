@@ -2,6 +2,15 @@ import SwiftUI
 import AppKit
 import Observation
 
+/// One file or folder staged for deletion in the in-app Bin.
+struct BinItem: Identifiable, Hashable {
+    let url: URL
+    let size: Int64
+    let name: String
+    let isDirectory: Bool
+    var id: URL { url }
+}
+
 @MainActor
 @Observable
 final class AppModel {
@@ -12,6 +21,7 @@ final class AppModel {
         case files = "Files"
         case duplicates = "Duplicates"
         case cleanup = "Cleanup"
+        case bin = "Bin"
         var id: String { rawValue }
         var icon: String {
             switch self {
@@ -21,6 +31,7 @@ final class AppModel {
             case .files:      return "doc.text.magnifyingglass"
             case .duplicates: return "doc.on.doc.fill"
             case .cleanup:    return "sparkles"
+            case .bin:        return "xmark.bin.fill"
             }
         }
     }
@@ -45,6 +56,11 @@ final class AppModel {
     var lastActionMessage: String?
     var lastTrashPairs: [(original: URL, trashed: URL)] = []
     var recentFolders: [URL] = []
+
+    // In-app Bin: files staged for deletion. Nothing is removed until the user
+    // empties the bin, and even then everything just moves to the Trash.
+    var binItems: [BinItem] = []
+    private var binURLs: Set<URL> = []
 
     private var pendingMessage: String?
     private let recentsKey = "recentFolders"
@@ -215,5 +231,48 @@ final class AppModel {
     /// Move a single item to the Trash (used by per-row actions everywhere).
     func trashOne(_ url: URL, size: Int64) {
         trash([(url: url, size: size)])
+    }
+
+    // MARK: - Bin (staged deletions)
+
+    var binTotalBytes: Int64 { binItems.reduce(0) { $0 + $1.size } }
+    func isInBin(_ url: URL) -> Bool { binURLs.contains(url) }
+
+    func addToBin(_ node: FileNode) {
+        addToBin(url: node.url, size: node.size, name: node.name, isDirectory: node.isDirectory)
+    }
+
+    /// Stage a file/folder for deletion. `isDirectory` is auto-detected when not given.
+    func addToBin(url: URL, size: Int64, name: String? = nil, isDirectory: Bool? = nil) {
+        guard !binURLs.contains(url) else { return }
+        let isDir = isDirectory
+            ?? ((try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false)
+        binURLs.insert(url)
+        binItems.append(BinItem(url: url, size: size,
+                                name: name ?? url.lastPathComponent, isDirectory: isDir))
+    }
+
+    func toggleBin(_ node: FileNode) {
+        if binURLs.contains(node.url) { removeFromBin(node.url) } else { addToBin(node) }
+    }
+
+    func removeFromBin(_ url: URL) {
+        binURLs.remove(url)
+        binItems.removeAll { $0.url == url }
+    }
+
+    /// Un-stage everything without deleting.
+    func clearBin() {
+        binItems.removeAll()
+        binURLs.removeAll()
+    }
+
+    /// Commit the bin: move every staged item to the Trash (recoverable), then
+    /// empty the bin. Re-scans so sizes stay accurate, and the result is undoable.
+    func emptyBin() {
+        guard !binItems.isEmpty else { return }
+        let items = binItems.map { (url: $0.url, size: $0.size) }
+        clearBin()
+        trash(items)
     }
 }

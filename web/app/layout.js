@@ -1,22 +1,22 @@
 import "./globals.css";
 
 export const metadata = {
-  metadataBase: new URL("https://disklens.vercel.app"),
-  title: "DiskLens — See what's eating your Mac's disk",
+  metadataBase: new URL("https://disklens-site.vercel.app"),
+  title: "DiskLens: see what's eating your Mac's disk",
   description:
-    "A fast, native macOS app that scans any folder and shows exactly where your space went — visual treemap, duplicate finder, and one-click cleanup. Free.",
+    "A fast, native macOS app that scans any folder and shows exactly where your space went: a visual treemap, duplicate finder, and one-click cleanup. Free.",
   keywords: ["disk space", "macOS", "storage analyzer", "treemap", "duplicate finder", "cleanup", "free"],
   openGraph: {
-    title: "DiskLens — Reclaim your Mac's disk space",
+    title: "DiskLens: reclaim your Mac's disk space",
     description:
       "Native macOS disk analyzer: visual treemap, duplicate finder, smart cleanup. Tiny, private, and free.",
     type: "website",
-    url: "https://disklens.vercel.app",
+    url: "https://disklens-site.vercel.app",
     siteName: "DiskLens",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DiskLens — Reclaim your Mac's disk space",
+    title: "DiskLens: reclaim your Mac's disk space",
     description: "Native macOS disk analyzer: treemap, duplicate finder, smart cleanup. Free.",
   },
 };

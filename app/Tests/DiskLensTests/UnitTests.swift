@@ -103,3 +103,52 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
         #expect(ByteFormat.string(2_000_000_000).contains("GB"))
     }
 }
+
+// MARK: - Scan exclusions (whole-disk performance)
+
+@Suite struct ScanEngineSkipTests {
+    @Test func excludesSystemLocationsButNotUserData() {
+        #expect(ScanEngine.isExcludedSystemPath("/System"))
+        #expect(ScanEngine.isExcludedSystemPath("/Volumes"))
+        #expect(ScanEngine.isExcludedSystemPath("/dev"))
+        #expect(ScanEngine.isExcludedSystemPath("/private/var/vm"))
+        #expect(!ScanEngine.isExcludedSystemPath("/"))
+        #expect(!ScanEngine.isExcludedSystemPath("/Applications"))
+        #expect(!ScanEngine.isExcludedSystemPath("/Users/me/Documents"))
+    }
+}
+
+// MARK: - In-app Bin (staged deletions)
+
+@MainActor
+@Suite struct BinTests {
+    @Test func addRemoveToggleAndTotal() {
+        let m = AppModel()
+        m.clearBin()
+        let a = mkFile("a.bin", 1_000)
+        let b = mkFile("b.bin", 2_500)
+
+        m.addToBin(a)
+        m.addToBin(b)
+        m.addToBin(a)                       // duplicate add is a no-op
+        #expect(m.binItems.count == 2)
+        #expect(m.binTotalBytes == 3_500)
+        #expect(m.isInBin(a.url))
+
+        m.toggleBin(a)                       // removes a
+        #expect(!m.isInBin(a.url))
+        #expect(m.binItems.count == 1)
+        #expect(m.binTotalBytes == 2_500)
+
+        m.toggleBin(a)                       // re-adds a
+        #expect(m.binItems.count == 2)
+
+        m.removeFromBin(b.url)
+        #expect(m.binItems.count == 1)
+        #expect(m.binTotalBytes == 1_000)
+
+        m.clearBin()
+        #expect(m.binItems.isEmpty)
+        #expect(m.binTotalBytes == 0)
+    }
+}

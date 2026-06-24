@@ -30,6 +30,7 @@ struct ContentView: View {
         case .files:      FilesView()
         case .duplicates: DuplicatesView()
         case .cleanup:    CleanupView()
+        case .bin:        BinView()
         }
     }
 }
@@ -50,15 +51,17 @@ struct TopBar: View {
 
             BrandMark(size: 26)
             VStack(alignment: .leading, spacing: 0) {
-                Text(model.scannedRoot?.lastPathComponent ?? "DiskLens").font(.headline).lineLimit(1)
+                Text(model.scannedRoot?.lastPathComponent ?? "DiskLens")
+                    .font(.headline).lineLimit(1).truncationMode(.middle)
                 if let root = model.rootNode {
                     Text("\(ByteFormat.string(root.size)) · \(root.fileCount) files")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
+            .frame(maxWidth: 240, alignment: .leading)
 
             Spacer(minLength: 12)
-            tabs
+            tabs.layoutPriority(1)
             Spacer(minLength: 12)
 
             Button { if let u = model.scannedRoot { model.scan(u) } } label: {
@@ -74,27 +77,64 @@ struct TopBar: View {
         .overlay(alignment: .bottom) { Divider() }
     }
 
+    // Show full icon+title tabs when they fit on one line; on a narrower window,
+    // fall back to icon-only tabs (titles become tooltips) so labels never wrap.
     private var tabs: some View {
+        ViewThatFits(in: .horizontal) {
+            tabRow(compact: false)
+            tabRow(compact: true)
+        }
+    }
+
+    private func tabRow(compact: Bool) -> some View {
         HStack(spacing: 3) {
             ForEach(AppModel.Section.allCases) { sec in
-                let on = model.selection == sec
-                let hot = hoveredTab == sec
-                Button { withAnimation(.easeOut(duration: 0.15)) { model.selection = sec } } label: {
-                    Label(sec.rawValue, systemImage: sec.icon)
-                        .labelStyle(.titleAndIcon)
-                        .font(.callout.weight(on ? .semibold : .regular))
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .foregroundStyle(on ? Color.white : (hot ? Color.primary : Color.secondary))
-                        .background(on ? Color.brand : (hot ? Color.primary.opacity(0.10) : Color.clear), in: Capsule())
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hoveredTab = h ? sec : (hoveredTab == sec ? nil : hoveredTab) } }
+                tabButton(sec, compact: compact)
             }
         }
         .padding(3)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
+    }
+
+    private func tabButton(_ sec: AppModel.Section, compact: Bool) -> some View {
+        let on = model.selection == sec
+        let hot = hoveredTab == sec
+        return Button { withAnimation(.easeOut(duration: 0.15)) { model.selection = sec } } label: {
+            tabLabel(sec, compact: compact)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .font(.callout.weight(on ? .semibold : .regular))
+                .padding(.horizontal, compact ? 9 : 12).padding(.vertical, 6)
+                .foregroundStyle(on ? Color.white : (hot ? Color.primary : Color.secondary))
+                .background(on ? Color.brand : (hot ? Color.primary.opacity(0.10) : Color.clear), in: Capsule())
+                .overlay(alignment: .topTrailing) { binBadge(sec) }
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(sec.rawValue)
+        .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hoveredTab = h ? sec : (hoveredTab == sec ? nil : hoveredTab) } }
+    }
+
+    @ViewBuilder
+    private func tabLabel(_ sec: AppModel.Section, compact: Bool) -> some View {
+        if compact {
+            Label(sec.rawValue, systemImage: sec.icon).labelStyle(.iconOnly)
+        } else {
+            Label(sec.rawValue, systemImage: sec.icon).labelStyle(.titleAndIcon)
+        }
+    }
+
+    @ViewBuilder
+    private func binBadge(_ sec: AppModel.Section) -> some View {
+        if sec == .bin, model.binItems.count > 0 {
+            Text("\(model.binItems.count)")
+                .font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                .padding(.horizontal, 4).padding(.vertical, 1)
+                .background(Color.red, in: Capsule())
+                .offset(x: 2, y: -3)
+                .transition(.scale)
+        }
     }
 }
 

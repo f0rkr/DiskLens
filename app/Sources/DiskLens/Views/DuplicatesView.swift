@@ -116,14 +116,24 @@ private struct DuplicateGroupRow: View {
                     }
                     .padding(.vertical, 1)
                 }
-                Button(role: .destructive) {
-                    let toTrash = group.files.dropFirst().map { (url: $0, size: group.size) }
-                    model.trash(Array(toTrash))
-                } label: {
-                    Label("Trash \(group.files.count - 1) extra cop\(group.files.count - 1 == 1 ? "y" : "ies")",
-                          systemImage: "trash")
+                HStack(spacing: 8) {
+                    let extras = group.files.count - 1
+                    Button {
+                        for url in group.files.dropFirst() {
+                            model.addToBin(url: url, size: group.size, isDirectory: false)
+                        }
+                    } label: {
+                        Label("Add \(extras) extra cop\(extras == 1 ? "y" : "ies") to Bin", systemImage: "xmark.bin")
+                    }
+                    .controlSize(.small)
+                    Button(role: .destructive) {
+                        let toTrash = group.files.dropFirst().map { (url: $0, size: group.size) }
+                        model.trash(Array(toTrash))
+                    } label: {
+                        Label("Trash now", systemImage: "trash")
+                    }
+                    .controlSize(.small)
                 }
-                .controlSize(.small)
                 .padding(.top, 6)
             }
         }

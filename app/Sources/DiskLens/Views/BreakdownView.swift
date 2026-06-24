@@ -46,6 +46,7 @@ struct BreakdownView: View {
 }
 
 private struct BreakdownRow: View {
+    @Environment(AppModel.self) private var model
     let node: FileNode
     let siblingMax: Int64
     let depth: Int
@@ -65,6 +66,11 @@ private struct BreakdownRow: View {
                 .contextMenu {
                     Button("Reveal in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([node.url])
+                    }
+                    if model.isInBin(node.url) {
+                        Button { model.removeFromBin(node.url) } label: { Label("Remove from Bin", systemImage: "xmark.bin") }
+                    } else {
+                        Button { model.addToBin(node) } label: { Label("Add to Bin", systemImage: "xmark.bin") }
                     }
                 }
 

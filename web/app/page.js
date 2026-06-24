@@ -34,7 +34,7 @@ const IconCoffee = () => (
 );
 
 const extras = [
-  { t: "Menu-bar overview", d: "Free space at a glance, right from your menu bar.",
+  { t: "Menu-bar overview", d: "Your free space right in the menu bar, plus a quick scan.",
     i: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><line x1="3" y1="8.5" x2="21" y2="8.5" /></svg> },
   { t: "Old & large finder", d: "Surfaces big files you haven't touched in a year or more.",
     i: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg> },
@@ -104,7 +104,7 @@ export default function Home() {
             <h1 className="hero-title hero-anim a2">See what&apos;s eating your disk.</h1>
             <p className="hero-sub hero-anim a3">
               A fast, native Mac app that scans any folder and shows exactly where your space
-              went — overview, treemap, duplicates, and one-click cleanup.
+              went: overview, treemap, duplicates, and one-click cleanup.
             </p>
             <div className="hero-cta hero-anim a4">
               <a className="btn btn-primary" href={DOWNLOAD_URL} download><IconApple /> Download for Mac</a>
@@ -122,7 +122,7 @@ export default function Home() {
                 <div className="window">
                   <div className="window-bar">
                     <span className="tl r" /><span className="tl y" /><span className="tl g" />
-                    <span className="window-title">DiskLens — Macintosh HD › Users › you</span>
+                    <span className="window-title">DiskLens · Macintosh HD › Users › you</span>
                   </div>
                   <div className="window-body"><HeroTreemap /></div>
                 </div>
@@ -139,8 +139,8 @@ export default function Home() {
           <div className="container">
             <Reveal className="section-head">
               <div className="kicker">And more</div>
-              <h2>Built for real cleanup</h2>
-              <p>The little things that make freeing up space feel effortless.</p>
+              <h2>A few more touches</h2>
+              <p>The small things that make freeing up space quicker.</p>
             </Reveal>
             <div className="more-grid">
               {extras.map((e, i) => (
@@ -192,7 +192,7 @@ export default function Home() {
                   <b>First launch.</b> DiskLens isn&apos;t notarized yet, so macOS will block it the first time. To open it:
                   <ol className="steps">
                     <li>Open the <b>.dmg</b> and drag DiskLens into <b>Applications</b>.</li>
-                    <li>Double-click it — when macOS says it can&apos;t verify the developer, click <b>Done</b>.</li>
+                    <li>Double-click it. When macOS says it can&apos;t verify the developer, click <b>Done</b>.</li>
                     <li>Go to <b>System Settings → Privacy &amp; Security</b>, scroll down, and click <b>Open Anyway</b>.</li>
                   </ol>
                   Prefer the terminal? Run this once after dragging it to Applications:
@@ -217,7 +217,7 @@ export default function Home() {
                 <a className="btn btn-primary btn-lg" href={DOWNLOAD_URL} download><IconApple /> Download for Mac</a>
                 <a className="btn btn-coffee btn-lg" href={DONATE_URL} target="_blank" rel="noopener noreferrer"><IconCoffee /> Buy me a coffee</a>
               </div>
-              <p className="closing-note">Free forever — but if it cleared up some gigabytes, a coffee keeps it going. ☕</p>
+              <p className="closing-note">Free forever. But if it cleared up some gigabytes, a coffee keeps it going. ☕</p>
             </Reveal>
           </div>
         </section>

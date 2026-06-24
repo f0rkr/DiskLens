@@ -99,6 +99,16 @@ struct CleanupView: View {
                  : "\(selected.count) selected · \(ByteFormat.string(selectedBytes))")
                 .foregroundStyle(.secondary)
             Spacer()
+            Button {
+                for s in model.cleanupSuggestions where selected.contains(s.url) {
+                    model.addToBin(url: s.url, size: s.size)
+                }
+                selected.removeAll()
+            } label: {
+                Label("Add to Bin", systemImage: "xmark.bin")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(selected.isEmpty)
             Button(role: .destructive) {
                 let items = model.cleanupSuggestions
                     .filter { selected.contains($0.url) }
@@ -106,9 +116,8 @@ struct CleanupView: View {
                 model.trash(items)
                 selected.removeAll()
             } label: {
-                Label("Move to Trash", systemImage: "trash")
+                Label("Trash now", systemImage: "trash")
             }
-            .buttonStyle(.borderedProminent)
             .disabled(selected.isEmpty)
         }
         .padding(.horizontal, 14).padding(.vertical, 10)

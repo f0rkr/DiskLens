@@ -91,6 +91,15 @@ private struct FileRow: View {
             .frame(width: 120, height: 8)
             Text(ByteFormat.string(file.size)).font(.callout.monospacedDigit())
                 .foregroundStyle(.secondary).frame(width: 76, alignment: .trailing)
+
+            let inBin = model.isInBin(file.url)
+            Button { withAnimation(.snappy) { model.toggleBin(file) } } label: {
+                Image(systemName: inBin ? "checkmark.circle.fill" : "trash.circle")
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(inBin ? Color.green : Color.secondary)
+            .help(inBin ? "Staged in the Bin — click to remove" : "Add to Bin")
         }
         .padding(.vertical, 8).padding(.horizontal, 12)
         .card(10)
@@ -101,8 +110,13 @@ private struct FileRow: View {
             Button { NSWorkspace.shared.open(file.url) } label: { Label("Open", systemImage: "arrow.up.forward.app") }
             Button { NSWorkspace.shared.activateFileViewerSelecting([file.url]) } label: { Label("Reveal in Finder", systemImage: "folder") }
             Divider()
+            if model.isInBin(file.url) {
+                Button { model.removeFromBin(file.url) } label: { Label("Remove from Bin", systemImage: "xmark.bin") }
+            } else {
+                Button { model.addToBin(file) } label: { Label("Add to Bin", systemImage: "xmark.bin") }
+            }
             Button(role: .destructive) { model.trashOne(file.url, size: file.size) } label: {
-                Label("Move to Trash", systemImage: "trash")
+                Label("Move to Trash now", systemImage: "trash")
             }
         }
     }

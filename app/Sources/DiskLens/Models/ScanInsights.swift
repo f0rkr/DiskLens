@@ -24,7 +24,27 @@ struct ScanInsights {
     nonisolated static func compute(from root: FileNode) -> ScanInsights {
         var bytesByKind: [FileColor.Kind: Int64] = [:]
         var countByKind: [FileColor.Kind: Int] = [:]
-        var files: [FileNode] = []
+
+        // Keep only the largest `limit` files, sorted descending, via a bounded
+        // insert — so a whole-Mac scan (millions of files) never builds and sorts
+        // a giant array. Most files fail the `> threshold` test in O(1).
+        let limit = 250
+        var top: [FileNode] = []
+        top.reserveCapacity(limit + 1)
+        var threshold: Int64 = 0   // smallest size currently kept (once full)
+
+        func consider(_ n: FileNode) {
+            if top.count < limit {
+                let i = top.firstIndex { $0.size < n.size } ?? top.count
+                top.insert(n, at: i)
+                if top.count == limit { threshold = top[limit - 1].size }
+            } else if n.size > threshold {
+                let i = top.firstIndex { $0.size < n.size } ?? top.count
+                top.insert(n, at: i)
+                top.removeLast()
+                threshold = top[limit - 1].size
+            }
+        }
 
         func walk(_ n: FileNode) {
             if n.isDirectory {
@@ -33,7 +53,7 @@ struct ScanInsights {
                 let k = FileColor.kind(for: n)
                 bytesByKind[k, default: 0] += n.size
                 countByKind[k, default: 0] += 1
-                if n.size > 0 { files.append(n) }
+                if n.size > 0 { consider(n) }
             }
         }
         walk(root)
@@ -54,7 +74,7 @@ struct ScanInsights {
         insights.totalFiles = root.fileCount
         insights.categories = cats
         insights.topItems = Array(root.children.prefix(10))
-        insights.topFiles = Array(files.sorted { $0.size > $1.size }.prefix(250))
+        insights.topFiles = top   // already the largest, sorted descending
         return insights
     }
 }

@@ -8,11 +8,44 @@ enum ScanEngine {
         .totalFileAllocatedSizeKey, .fileAllocatedSizeKey, .fileSizeKey, .nameKey,
         .contentModificationDateKey
     ]
+    private static let prefetchKeys = Array(keys)
+
+    /// Absolute locations we never descend into while scanning (unless the user
+    /// explicitly picks one as the scan root): the read-only system volume, other
+    /// mounted volumes, VM swap, device files, and system metadata. They're huge
+    /// and/or not user-reclaimable — descending into them is what made a
+    /// whole-Mac scan ("/") crawl and the UI feel buggy.
+    private static let excludedPaths: Set<String> = [
+        "/System", "/Volumes", "/dev", "/net", "/home", "/cores", "/.vol",
+        "/private/var/vm", "/private/var/folders", "/private/var/db/diagnostics",
+        "/.Spotlight-V100", "/.fseventsd", "/.DocumentRevisions-V100",
+        "/.TemporaryItems", "/.Trashes", "/.PKInstallSandboxManager-SystemSoftware"
+    ]
+
+    /// Whether `path` is a system location we skip on a full-disk scan.
+    static func isExcludedSystemPath(_ path: String) -> Bool {
+        excludedPaths.contains(path)
+    }
 
     static func buildTree(at root: URL,
                           isCancelled: @escaping () -> Bool,
                           progress: @escaping (Int, String) -> Void) -> FileNode? {
         var counter = 0
+        let rootPath = root.path
+        var lastEmit = DispatchTime.now()
+
+        // Report progress at most ~12×/sec. A whole-Mac scan touches millions of
+        // files; hopping to the main actor for each one floods the UI. Gate on a
+        // cheap counter mask first, then on elapsed time.
+        func tick(_ path: String, force: Bool = false) {
+            counter += 1
+            guard force || counter & 0x3FF == 0 else { return }
+            let now = DispatchTime.now()
+            if force || now.uptimeNanoseconds &- lastEmit.uptimeNanoseconds > 80_000_000 {
+                lastEmit = now
+                progress(counter, path)
+            }
+        }
 
         func recurse(_ url: URL) -> FileNode? {
             if isCancelled() { return nil }
@@ -30,10 +63,16 @@ enum ScanEngine {
             }
 
             if isDir {
+                // Skip excluded system locations (but honor an explicit choice to
+                // scan one directly as the root).
+                if url.path != rootPath && isExcludedSystemPath(url.path) {
+                    return nil
+                }
+
                 let node = FileNode(url: url, name: name, isDirectory: true)
                 let contents = (try? FileManager.default.contentsOfDirectory(
                     at: url,
-                    includingPropertiesForKeys: Array(keys),
+                    includingPropertiesForKeys: prefetchKeys,
                     options: [])) ?? []
 
                 var total: Int64 = 0
@@ -52,9 +91,7 @@ enum ScanEngine {
                 node.size = total
                 node.fileCount = count
                 node.children = kids.sorted { $0.size > $1.size }
-
-                counter += 1
-                if counter & 0xFF == 0 { progress(counter, url.path) }
+                tick(url.path)
                 return node
             } else {
                 let size = Int64(values?.totalFileAllocatedSize
@@ -64,14 +101,13 @@ enum ScanEngine {
                 let node = FileNode(url: url, name: name, isDirectory: false, size: size)
                 node.fileCount = 1
                 node.modifiedAt = values?.contentModificationDate
-                counter += 1
-                if counter & 0xFF == 0 { progress(counter, url.path) }
+                tick(url.path)
                 return node
             }
         }
 
         let result = recurse(root)
-        progress(counter, root.path)
+        progress(counter, root.path)   // always emit a final, accurate count
         return result
     }
 }
