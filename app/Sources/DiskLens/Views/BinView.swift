@@ -18,13 +18,8 @@ struct BinView: View {
                 }
                 .frame(maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(model.binItems) { item in
-                            BinRow(item: item)
-                        }
-                    }
-                    .padding(16)
+                PaginatedList(items: model.binItems, spacing: 8) { item, _ in
+                    BinRow(item: item)
                 }
                 actionBar
             }

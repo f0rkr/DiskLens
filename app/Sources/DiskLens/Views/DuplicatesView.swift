@@ -61,13 +61,8 @@ struct DuplicatesView: View {
             }
             .padding(.horizontal, 14).padding(.vertical, 8)
             Divider()
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(model.duplicateGroups) { group in
-                        DuplicateGroupRow(group: group)
-                    }
-                }
-                .padding(12)
+            PaginatedList(items: model.duplicateGroups, spacing: 8) { group, _ in
+                DuplicateGroupRow(group: group)
             }
         }
     }

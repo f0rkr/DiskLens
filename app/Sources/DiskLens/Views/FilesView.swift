@@ -24,44 +24,88 @@ struct UndoBanner: View {
 struct FilesView: View {
     @Environment(AppModel.self) private var model
     @State private var oldOnly = false
+    @State private var kind: FileColor.Kind?   // nil == All
 
     private var cutoff: Date { Calendar.current.date(byAdding: .year, value: -1, to: Date.now) ?? .distantPast }
-    private var files: [FileNode] {
+
+    /// Largest files after the optional "old only" filter (before the kind tab).
+    private var base: [FileNode] {
         let all = model.insights.topFiles
         return oldOnly ? all.filter { ($0.modifiedAt ?? .now) < cutoff } : all
+    }
+    private var presentKinds: [FileColor.Kind] {
+        let order: [FileColor.Kind] = [.media, .code, .document, .archive, .app, .data, .other]
+        let present = Set(base.map { FileColor.kind(for: $0) })
+        return order.filter { present.contains($0) }
+    }
+    private var files: [FileNode] {
+        guard let k = kind else { return base }
+        return base.filter { FileColor.kind(for: $0) == k }
     }
     private var maxSize: Int64 { model.insights.topFiles.first?.size ?? 1 }
 
     var body: some View {
         VStack(spacing: 0) {
             UndoBanner()
-            HStack {
-                Text("Largest files").font(.headline)
-                Spacer()
-                Toggle(isOn: $oldOnly.animation(.snappy)) {
-                    Label("Old only (1y+)", systemImage: "clock.badge.exclamationmark")
-                }
-                .toggleStyle(.switch).controlSize(.mini)
-            }
-            .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
+            header
+            if !presentKinds.isEmpty { kindTabs }
 
             if files.isEmpty {
                 ContentUnavailableView(
-                    oldOnly ? "No old large files" : "No files",
+                    (kind != nil || oldOnly) ? "No matching files" : "No files",
                     systemImage: "doc.text.magnifyingglass",
                     description: Text(oldOnly ? "None of the largest files are older than a year." : "Nothing to list."))
                     .frame(maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(Array(files.enumerated()), id: \.element.id) { idx, f in
-                            FileRow(file: f, rank: idx + 1, maxSize: maxSize)
-                        }
-                    }
-                    .padding(16)
+                PaginatedList(items: files,
+                              resetKey: AnyHashable("\(kind.map { "\($0)" } ?? "all")|\(oldOnly)")) { f, idx in
+                    FileRow(file: f, rank: idx + 1, maxSize: maxSize)
                 }
             }
         }
+    }
+
+    private var header: some View {
+        HStack {
+            Text("Largest files").font(.headline)
+            Spacer()
+            Toggle(isOn: $oldOnly.animation(.snappy)) {
+                Label("Old only (1y+)", systemImage: "clock.badge.exclamationmark")
+            }
+            .toggleStyle(.switch).controlSize(.mini)
+        }
+        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
+    }
+
+    private var kindTabs: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                kindPill(nil, "All", base.count)
+                ForEach(presentKinds, id: \.self) { k in
+                    kindPill(k, FileColor.label(for: k), base.filter { FileColor.kind(for: $0) == k }.count)
+                }
+            }
+            .padding(.horizontal, 16).padding(.bottom, 8)
+        }
+    }
+
+    private func kindPill(_ k: FileColor.Kind?, _ label: String, _ count: Int) -> some View {
+        let on = kind == k
+        return Button { withAnimation(.easeOut(duration: 0.12)) { kind = k } } label: {
+            HStack(spacing: 6) {
+                if let k { Circle().fill(FileColor.color(forKind: k)).frame(width: 8, height: 8) }
+                Text(label)
+                Text("\(count)").font(.caption2.weight(.bold)).monospacedDigit()
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(on ? Color.white.opacity(0.25) : Color.primary.opacity(0.10), in: Capsule())
+            }
+            .font(.callout.weight(on ? .semibold : .regular)).fixedSize()
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .foregroundStyle(on ? Color.white : Color.primary)
+            .background(on ? Color.brand : Color.primary.opacity(0.06), in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -99,7 +143,7 @@ private struct FileRow: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(inBin ? Color.green : Color.secondary)
-            .help(inBin ? "Staged in the Bin — click to remove" : "Add to Bin")
+            .help(inBin ? "Staged in the Bin, click to remove" : "Add to Bin")
         }
         .padding(.vertical, 8).padding(.horizontal, 12)
         .card(10)

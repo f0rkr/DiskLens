@@ -6,7 +6,7 @@ struct BreakdownView: View {
 
     private var items: [FileNode] {
         search.isEmpty
-            ? Array(root.children.prefix(300))
+            ? root.children
             : root.children.filter { $0.name.localizedCaseInsensitiveContains(search) }
     }
 
@@ -24,22 +24,14 @@ struct BreakdownView: View {
             .card(10)
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(items) { child in
-                        BreakdownRow(node: child, siblingMax: root.children.first?.size ?? 1, depth: 0)
-                    }
-                    if search.isEmpty && root.children.count > 300 {
-                        Text("+ \(root.children.count - 300) more items…")
-                            .font(.caption).foregroundStyle(.tertiary)
-                            .padding(.leading, 30).padding(.vertical, 4)
-                    } else if !search.isEmpty && items.isEmpty {
-                        Text("No items match “\(search)”.")
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity).padding(.top, 40)
-                    }
+            if !search.isEmpty && items.isEmpty {
+                ContentUnavailableView("No matches", systemImage: "magnifyingglass",
+                                       description: Text("No items match “\(search)”."))
+                    .frame(maxHeight: .infinity)
+            } else {
+                PaginatedList(items: items, resetKey: AnyHashable(search), spacing: 2) { child, _ in
+                    BreakdownRow(node: child, siblingMax: root.children.first?.size ?? 1, depth: 0)
                 }
-                .padding(.vertical, 6)
             }
         }
     }
