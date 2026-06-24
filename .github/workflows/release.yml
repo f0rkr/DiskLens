@@ -1,0 +1,53 @@
+name: Release
+
+# Production builds: every push to main (re)publishes the v<VERSION> release,
+# and pushing a v*.*.* tag cuts that exact version. The website downloads the
+# .dmg from this release (github.com/f0rkr/DiskLens/releases/latest).
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF#refs/tags/v}"
+          else
+            V="$(cat VERSION)"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Building DiskLens $V (build ${{ github.run_number }})"
+
+      - name: Stamp version into the app
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ steps.ver.outputs.version }}" app/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" app/Info.plist
+
+      - name: Build & package
+        run: |
+          cd app
+          bash build-app.sh
+          bash make-dmg.sh
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: DiskLens ${{ steps.ver.outputs.version }}
+          files: app/DiskLens.dmg
+          fail_on_unmatched_files: true
+          generate_release_notes: true

@@ -1,0 +1,44 @@
+name: Dev build
+
+# Development builds: every push to dev/staging compiles the app, uploads the
+# .dmg as a CI artifact, and refreshes a rolling "dev-latest" pre-release so
+# testers can always grab the newest build.
+on:
+  push:
+    branches: [dev, staging]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Build & package
+        run: |
+          cd app
+          bash build-app.sh
+          bash make-dmg.sh
+
+      - name: Upload .dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DiskLens-${{ github.ref_name }}-${{ github.run_number }}
+          path: app/DiskLens.dmg
+
+      - name: Refresh rolling dev pre-release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dev-latest
+          name: DiskLens (dev build)
+          prerelease: true
+          files: app/DiskLens.dmg
