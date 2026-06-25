@@ -26,6 +26,18 @@ private struct CardBackground: ViewModifier {
 
 extension View {
     func card(_ radius: CGFloat = 14) -> some View { modifier(CardBackground(radius: radius)) }
+
+    /// Liquid Glass background (macOS 26+) over an arbitrary shape, with a
+    /// frosted-material fallback. `interactive` adds the specular touch/hover
+    /// response that makes the glass feel alive.
+    @ViewBuilder
+    func glassBackground<S: Shape>(in shape: S, interactive: Bool = false) -> some View {
+        if #available(macOS 26.0, *) {
+            glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
+        } else {
+            background(.regularMaterial, in: shape)
+        }
+    }
 }
 
 /// Icon button with a hover highlight + press feedback. Stable hit area.
@@ -61,7 +73,7 @@ struct CardButtonStyle: ButtonStyle {
         @State private var hover = false
         var body: some View {
             c.label
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+                .glassBackground(in: RoundedRectangle(cornerRadius: radius, style: .continuous), interactive: true)
                 .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(hover ? Color.brand : Color.primary.opacity(0.08), lineWidth: hover ? 1.5 : 1))
                 .shadow(color: Color.brand.opacity(hover ? 0.22 : 0), radius: 10, y: 4)

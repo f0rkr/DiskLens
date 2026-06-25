@@ -123,7 +123,7 @@ struct TopBar: View {
             }
         }
         .padding(3)
-        .background(.ultraThinMaterial, in: Capsule())
+        .glassBackground(in: Capsule())
         .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
     }
 
