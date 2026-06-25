@@ -225,6 +225,28 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - Junk photos
+
+@Suite struct JunkPhotosTests {
+    @Test func laplacianVarianceFlatIsZeroEdgeIsHigh() {
+        let w = 8, h = 8
+        let flat = [UInt8](repeating: 128, count: w * h)
+        #expect(JunkPhotos.laplacianVariance(pixels: flat, width: w, height: h) == 0)
+
+        // A sharp vertical edge has a high-variance Laplacian response.
+        var edge = [UInt8](repeating: 0, count: w * h)
+        for y in 0..<h { for x in (w / 2)..<w { edge[y * w + x] = 255 } }
+        #expect(JunkPhotos.laplacianVariance(pixels: edge, width: w, height: h) > 0)
+    }
+
+    @Test func screenshotNameHeuristic() {
+        let base = FileManager.default.temporaryDirectory
+        #expect(JunkPhotos.isScreenshot(base.appendingPathComponent("Screenshot 2026-01-01 at 10.00.00.png")))
+        #expect(JunkPhotos.isScreenshot(base.appendingPathComponent("CleanShot 2026.png")))
+        #expect(!JunkPhotos.isScreenshot(base.appendingPathComponent("IMG_1234.jpg")))
+    }
+}
+
 // MARK: - Compress & archive
 
 @Suite struct ArchiverTests {

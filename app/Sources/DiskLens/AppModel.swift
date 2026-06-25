@@ -22,7 +22,7 @@ final class AppModel {
         case byApp = "Apps"
         case byType = "By Type"
         case duplicates = "Duplicates"
-        case similar = "Similar"
+        case similar = "Photos"
         case cleanup = "Cleanup"
         case reclaim = "Reclaim"
         case bin = "Bin"
@@ -36,7 +36,7 @@ final class AppModel {
             case .byApp:      return "square.grid.2x2.fill"
             case .byType:     return "tag.fill"
             case .duplicates: return "doc.on.doc.fill"
-            case .similar:    return "photo.on.rectangle.angled"
+            case .similar:    return "photo.stack"
             case .cleanup:    return "sparkles"
             case .reclaim:    return "arrow.3.trianglepath"
             case .bin:        return "xmark.bin.fill"
@@ -72,6 +72,16 @@ final class AppModel {
     var similarProgress = ""
     var didRunSimilar = false
 
+    var duplicateFolderGroups: [DuplicateFolderGroup] = []
+    var isFindingDupFolders = false
+    var dupFolderProgress = ""
+    var didRunDupFolders = false
+
+    var junkPhotos: [JunkPhoto] = []
+    var isFindingJunk = false
+    var junkProgress = ""
+    var didRunJunk = false
+
     var hiddenSpace: HiddenSpace?    // Time Machine snapshots + purgeable, for the Reclaim view
     var trashBytes: Int64 = 0        // size of ~/.Trash, for the Reclaim view
     var inspecting: FileNode?        // node shown in the Inspector ("Get Info") sheet
@@ -101,6 +111,8 @@ final class AppModel {
     private var scanTask: Task<Void, Never>?
     private var dupTask: Task<Void, Never>?
     private var similarTask: Task<Void, Never>?
+    private var dupFolderTask: Task<Void, Never>?
+    private var junkTask: Task<Void, Never>?
     private var appsTask: Task<Void, Never>?
     @ObservationIgnored private var watcher: FolderWatcher?
 
@@ -158,6 +170,8 @@ final class AppModel {
         scanTask?.cancel()
         dupTask?.cancel()
         similarTask?.cancel()
+        dupFolderTask?.cancel()
+        junkTask?.cancel()
         isScanning = true
         filesScanned = 0
         currentPath = url.path
@@ -171,6 +185,10 @@ final class AppModel {
         didRunDuplicates = false
         similarGroups = []
         didRunSimilar = false
+        duplicateFolderGroups = []
+        didRunDupFolders = false
+        junkPhotos = []
+        didRunJunk = false
         hiddenSpace = nil
         cleanupSuggestions = []
         lastActionMessage = nil
@@ -225,11 +243,15 @@ final class AppModel {
         scanTask?.cancel()
         dupTask?.cancel()
         similarTask?.cancel()
+        dupFolderTask?.cancel()
+        junkTask?.cancel()
         appsTask?.cancel()
         watcher?.stop()
         isScanning = false
         isFindingDuplicates = false
         isFindingSimilar = false
+        isFindingDupFolders = false
+        isFindingJunk = false
         isScanningApps = false
         isWatching = false
         folderChanged = false
@@ -240,6 +262,10 @@ final class AppModel {
         didRunDuplicates = false
         similarGroups = []
         didRunSimilar = false
+        duplicateFolderGroups = []
+        didRunDupFolders = false
+        junkPhotos = []
+        didRunJunk = false
         hiddenSpace = nil
         cleanupSuggestions = []
         lastActionMessage = nil
@@ -313,6 +339,66 @@ final class AppModel {
     func cancelSimilar() {
         similarTask?.cancel()
         isFindingSimilar = false
+    }
+
+    // MARK: - Duplicate folders (on demand — content-verified, the expensive pass)
+
+    func findDuplicateFolders() {
+        guard let root = rootNode, !isFindingDupFolders else { return }
+        dupFolderTask?.cancel()
+        isFindingDupFolders = true
+        dupFolderProgress = "Starting…"
+        duplicateFolderGroups = []
+
+        dupFolderTask = Task.detached(priority: .userInitiated) { [weak self] in
+            let groups = DuplicateFolders.find(
+                in: root,
+                isCancelled: { Task.isCancelled },
+                progress: { msg in Task { @MainActor [weak self] in self?.dupFolderProgress = msg } })
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                if !Task.isCancelled {
+                    self.duplicateFolderGroups = groups
+                    self.didRunDupFolders = true
+                }
+                self.isFindingDupFolders = false
+            }
+        }
+    }
+
+    func cancelDuplicateFolders() {
+        dupFolderTask?.cancel()
+        isFindingDupFolders = false
+    }
+
+    // MARK: - Junk photos (Vision-free; on demand, the expensive pass)
+
+    func findJunkPhotos() {
+        guard let root = rootNode, !isFindingJunk else { return }
+        junkTask?.cancel()
+        isFindingJunk = true
+        junkProgress = "Starting…"
+        junkPhotos = []
+
+        junkTask = Task.detached(priority: .userInitiated) { [weak self] in
+            let found = JunkPhotos.find(
+                in: root,
+                isCancelled: { Task.isCancelled },
+                progress: { msg in Task { @MainActor [weak self] in self?.junkProgress = msg } })
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                if !Task.isCancelled {
+                    self.junkPhotos = found
+                    self.didRunJunk = true
+                }
+                self.isFindingJunk = false
+            }
+        }
+    }
+
+    func cancelJunk() {
+        junkTask?.cancel()
+        isFindingJunk = false
     }
 
     // MARK: - Per-app storage (on demand; independent of the folder scan)

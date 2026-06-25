@@ -57,3 +57,37 @@ import Foundation
         #expect(root?.children.isEmpty ?? true)
     }
 }
+
+/// Lays down two byte-identical folders (plus a different one) and confirms the
+/// duplicate-folder finder pairs only the matching two.
+@Suite final class DuplicateFoldersIntegrationTests {
+    let dir: URL
+
+    init() throws {
+        dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("disklens-dupfold-\(UUID().uuidString)")
+        let fm = FileManager.default
+        for name in ["projA", "projB"] {                      // identical contents & layout
+            let f = dir.appendingPathComponent(name)
+            try fm.createDirectory(at: f.appendingPathComponent("src"), withIntermediateDirectories: true)
+            try Data(repeating: 7, count: 1_200_000).write(to: f.appendingPathComponent("data.bin"))
+            try Data("hello".utf8).write(to: f.appendingPathComponent("src/readme.txt"))
+        }
+        let other = dir.appendingPathComponent("other")        // same layout, different bytes
+        try fm.createDirectory(at: other.appendingPathComponent("src"), withIntermediateDirectories: true)
+        try Data(repeating: 9, count: 1_200_000).write(to: other.appendingPathComponent("data.bin"))
+        try Data("world".utf8).write(to: other.appendingPathComponent("src/readme.txt"))
+    }
+
+    deinit { try? FileManager.default.removeItem(at: dir) }
+
+    @Test func detectsIdenticalFolders() throws {
+        let root = try #require(ScanEngine.buildTree(at: dir, isCancelled: { false }, progress: { _, _ in }))
+        let groups = DuplicateFolders.find(in: root, isCancelled: { false }, progress: { _ in })
+        #expect(groups.count == 1)
+        let g = try #require(groups.first)
+        #expect(g.folders.count == 2)
+        #expect(Set(g.folders.map(\.name)) == ["projA", "projB"])
+        #expect(g.reclaimable > 1_000_000)
+    }
+}
