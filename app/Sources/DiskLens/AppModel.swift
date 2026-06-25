@@ -22,6 +22,7 @@ final class AppModel {
         case duplicates = "Duplicates"
         case similar = "Similar"
         case cleanup = "Cleanup"
+        case reclaim = "Reclaim"
         case bin = "Bin"
         var id: String { rawValue }
         var icon: String {
@@ -33,6 +34,7 @@ final class AppModel {
             case .duplicates: return "doc.on.doc.fill"
             case .similar:    return "photo.on.rectangle.angled"
             case .cleanup:    return "sparkles"
+            case .reclaim:    return "arrow.3.trianglepath"
             case .bin:        return "xmark.bin.fill"
             }
         }
@@ -64,6 +66,8 @@ final class AppModel {
     var isFindingSimilar = false
     var similarProgress = ""
     var didRunSimilar = false
+
+    var hiddenSpace: HiddenSpace?    // Time Machine snapshots + purgeable, for the Reclaim view
 
     var cleanupSuggestions: [CleanupSuggestion] = []
 
@@ -145,6 +149,7 @@ final class AppModel {
         didRunDuplicates = false
         similarGroups = []
         didRunSimilar = false
+        hiddenSpace = nil
         cleanupSuggestions = []
         lastActionMessage = nil
         lastDelta = nil
@@ -208,6 +213,7 @@ final class AppModel {
         didRunDuplicates = false
         similarGroups = []
         didRunSimilar = false
+        hiddenSpace = nil
         cleanupSuggestions = []
         lastActionMessage = nil
         lastDelta = nil
@@ -276,6 +282,20 @@ final class AppModel {
     func cancelSimilar() {
         similarTask?.cancel()
         isFindingSimilar = false
+    }
+
+    // MARK: - Hidden space (Time Machine local snapshots, purgeable)
+
+    func refreshHiddenSpace() async {
+        let vol = scannedRoot ?? URL(fileURLWithPath: NSHomeDirectory())
+        hiddenSpace = await Task.detached { HiddenSpaceScanner.scan(volume: vol) }.value
+    }
+
+    func reclaimSnapshots() async {
+        _ = await Task.detached { HiddenSpaceScanner.reclaimSnapshots() }.value
+        lastActionMessage = "Thinned Time Machine local snapshots."
+        await refreshHiddenSpace()
+        if let r = scannedRoot { diskStats = DiskStats.current(for: r) }
     }
 
     // MARK: - Deletion

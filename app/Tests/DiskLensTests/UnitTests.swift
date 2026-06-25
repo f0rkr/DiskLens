@@ -190,6 +190,25 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - Hidden space (Time Machine snapshot parsing)
+
+@Suite struct HiddenSpaceTests {
+    @Test func parsesSnapshotLines() {
+        let out = """
+        Snapshots for disk /:
+        com.apple.TimeMachine.2026-06-24-153000.local
+        com.apple.TimeMachine.2026-06-23-120000.local
+        """
+        let snaps = HiddenSpaceScanner.parseSnapshots(out)
+        #expect(snaps.count == 2)
+        #expect(snaps.allSatisfy { $0.contains("com.apple.TimeMachine") })
+    }
+
+    @Test func ignoresNonSnapshotOutput() {
+        #expect(HiddenSpaceScanner.parseSnapshots("No snapshots\n").isEmpty)
+    }
+}
+
 // MARK: - System stats (CPU / memory)
 
 @Suite struct SystemStatsTests {

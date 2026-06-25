@@ -43,6 +43,7 @@ struct ContentView: View {
         case .duplicates: DuplicatesView()
         case .similar:    SimilarPhotosView()
         case .cleanup:    CleanupView()
+        case .reclaim:    ReclaimView()
         case .bin:        BinView()
         }
     }
