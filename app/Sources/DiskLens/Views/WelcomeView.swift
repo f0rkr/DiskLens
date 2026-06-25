@@ -8,6 +8,7 @@ struct WelcomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appear = false
     @State private var dropTargeted = false
+    @State private var drift = false
 
     var body: some View {
         ZStack {
@@ -44,12 +45,16 @@ struct WelcomeView: View {
     private var aurora: some View {
         ZStack {
             Circle().fill(Color.brand.opacity(0.20)).frame(width: 460).blur(radius: 130)
-                .offset(x: -180, y: -200)
+                .offset(x: drift ? -150 : -200, y: drift ? -175 : -220)
             Circle().fill(Color.brand2.opacity(0.18)).frame(width: 420).blur(radius: 130)
-                .offset(x: 200, y: 90)
+                .offset(x: drift ? 225 : 175, y: drift ? 70 : 115)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 9).repeatForever(autoreverses: true)) { drift = true }
+        }
     }
 
     private var hero: some View {

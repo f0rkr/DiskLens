@@ -6,16 +6,21 @@ extension Color {
     static let brand2 = Color(red: 0.61, green: 0.42, blue: 1.0)
 }
 
-/// A frosted "glass" card surface, matching the brand. Adapts to light/dark.
+/// A glass card surface. Uses Liquid Glass on macOS 26+, and falls back to a
+/// frosted material (with a hairline border) on earlier macOS.
 private struct CardBackground: ViewModifier {
     var radius: CGFloat
     func body(content: Content) -> some View {
-        content
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.07))
-            )
+        Group {
+            if #available(macOS 26.0, *) {
+                content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            } else {
+                content
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.07)))
+            }
+        }
     }
 }
 
