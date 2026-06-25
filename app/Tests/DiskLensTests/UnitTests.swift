@@ -190,6 +190,23 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - Compress & archive
+
+@Suite struct ArchiverTests {
+    @Test func zipsAFolderIntoANonEmptyArchive() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("arch-\(UUID().uuidString)")
+        let src = dir.appendingPathComponent("payload")
+        try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try Data(repeating: 65, count: 20_000).write(to: src.appendingPathComponent("a.txt"))
+
+        let dest = dir.appendingPathComponent("out.zip")
+        #expect(Archiver.zip(source: src, to: dest))
+        #expect(FileManager.default.fileExists(atPath: dest.path))
+        #expect(((try? dest.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0) > 0)
+    }
+}
+
 // MARK: - Per-app storage (directory sizing)
 
 @Suite struct AppUsageTests {

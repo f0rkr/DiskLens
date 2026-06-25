@@ -57,6 +57,7 @@ final class AppModel {
     var availableUpdate: String?     // a newer release version, when the update check finds one
     var isUpdating = false           // downloading/installing a self-update
     var updateError: String?         // why a self-update attempt failed
+    var isArchiving = false          // compressing a folder before trashing the original
 
     // Derived analyses (computed lazily after a scan / on demand)
     var duplicateGroups: [DuplicateGroup] = []
@@ -503,6 +504,38 @@ final class AppModel {
             NSWorkspace.shared.activateFileViewerSelecting([url])
         } catch {
             lastActionMessage = "Couldn't save the report: \(error.localizedDescription)"
+        }
+    }
+
+    /// Compress a file/folder into a .zip the user picks, then move the original
+    /// to the Trash (recoverable) — reclaim space while keeping the data.
+    func compressAndTrash(_ url: URL, size: Int64) {
+        guard !isArchiving else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = url.lastPathComponent + ".zip"
+        panel.directoryURL = url.deletingLastPathComponent()
+        panel.canCreateDirectories = true
+        panel.title = "Compress and archive"
+        guard panel.runModal() == .OK, let dest = panel.url else { return }
+
+        isArchiving = true
+        lastActionMessage = "Compressing \(url.lastPathComponent)…"
+        Task.detached(priority: .userInitiated) {
+            let ok = Archiver.zip(source: url, to: dest)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.isArchiving = false
+                guard ok else { self.lastActionMessage = "Couldn't create the archive."; return }
+                let result = TrashHelper.moveToTrash([(url: url, size: size)])
+                self.lastTrashPairs = result.restorePairs
+                self.pendingMessage = "Archived to \(dest.lastPathComponent); original moved to the Trash."
+                if let root = self.scannedRoot {
+                    self.scan(root)
+                } else {
+                    self.lastActionMessage = self.pendingMessage
+                    self.pendingMessage = nil
+                }
+            }
         }
     }
 }

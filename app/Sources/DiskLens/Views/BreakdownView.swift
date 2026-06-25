@@ -81,6 +81,12 @@ private struct BreakdownRow: View {
                     } else {
                         Button { model.addToBin(node) } label: { Label("Add to Bin", systemImage: "xmark.bin") }
                     }
+                    if node.isDirectory {
+                        Divider()
+                        Button { model.compressAndTrash(node.url, size: node.size) } label: {
+                            Label("Compress & Move Original to Trash", systemImage: "archivebox")
+                        }
+                    }
                 }
 
             if expanded, let children = node.childrenOrNil {

@@ -68,6 +68,12 @@ struct TreemapView: View {
                         } else {
                             Button { model.addToBin(n) } label: { Label("Add to Bin", systemImage: "xmark.bin") }
                         }
+                        if n.isDirectory {
+                            Divider()
+                            Button { model.compressAndTrash(n.url, size: n.size) } label: {
+                                Label("Compress & Trash original", systemImage: "archivebox")
+                            }
+                        }
                     }
                 }
                 .overlay {
