@@ -73,6 +73,8 @@ final class AppModel {
     var didRunSimilar = false
 
     var hiddenSpace: HiddenSpace?    // Time Machine snapshots + purgeable, for the Reclaim view
+    var trashBytes: Int64 = 0        // size of ~/.Trash, for the Reclaim view
+    var inspecting: FileNode?        // node shown in the Inspector ("Get Info") sheet
 
     var appUsages: [AppUsage] = []   // per-application storage ("By App"), on demand
     var isScanningApps = false
@@ -247,6 +249,8 @@ final class AppModel {
         unreadableCount = 0
         appUsages = []
         didRunApps = false
+        inspecting = nil
+        trashBytes = 0
     }
 
     // MARK: - Duplicates (run on demand — it's the expensive pass)
@@ -365,7 +369,23 @@ final class AppModel {
 
     func refreshHiddenSpace() async {
         let vol = scannedRoot ?? URL(fileURLWithPath: NSHomeDirectory())
-        hiddenSpace = await Task.detached { HiddenSpaceScanner.scan(volume: vol) }.value
+        let trash = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".Trash")
+        let result = await Task.detached { (HiddenSpaceScanner.scan(volume: vol), AppUsageScanner.dirSize(trash)) }.value
+        hiddenSpace = result.0
+        trashBytes = result.1
+    }
+
+    /// Permanently remove everything in ~/.Trash.
+    func emptyTrash() async {
+        let trash = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".Trash")
+        await Task.detached {
+            let fm = FileManager.default
+            for item in (try? fm.contentsOfDirectory(at: trash, includingPropertiesForKeys: nil)) ?? [] {
+                try? fm.removeItem(at: item)
+            }
+        }.value
+        lastActionMessage = "Emptied the Trash."
+        await refreshHiddenSpace()
     }
 
     func reclaimSnapshots() async {

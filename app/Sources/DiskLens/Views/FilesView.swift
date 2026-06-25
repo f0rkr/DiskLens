@@ -170,6 +170,7 @@ private struct FileRow: View {
         .contentShape(Rectangle())
         .onTapGesture { QuickLook.show(file.url) }
         .contextMenu {
+            Button { model.inspecting = file } label: { Label("Get Info", systemImage: "info.circle") }
             Button { QuickLook.show(file.url) } label: { Label("Quick Look", systemImage: "eye") }
             Button { NSWorkspace.shared.open(file.url) } label: { Label("Open", systemImage: "arrow.up.forward.app") }
             Button { NSWorkspace.shared.activateFileViewerSelecting([file.url]) } label: { Label("Reveal in Finder", systemImage: "folder") }

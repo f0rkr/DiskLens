@@ -52,6 +52,7 @@ struct TreemapView: View {
                 )
                 .contextMenu {
                     if let n = hoveredNode {
+                        Button { model.inspecting = n } label: { Label("Get Info", systemImage: "info.circle") }
                         if n.childrenOrNil != nil {
                             Button { withAnimation(.snappy) { stack.append(n); hoveredID = nil } } label: {
                                 Label("Zoom into \(n.name)", systemImage: "plus.magnifyingglass")

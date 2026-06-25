@@ -11,6 +11,9 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task { await model.maybeCheckForUpdate() }
+        .sheet(item: Binding(get: { model.inspecting }, set: { model.inspecting = $0 })) { node in
+            InspectorView(node: node)
+        }
     }
 
     @ViewBuilder
@@ -248,6 +251,55 @@ struct FullDiskAccessBanner: View {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+/// "Get Info" detail sheet for a scanned item.
+struct InspectorView: View {
+    @Environment(\.dismiss) private var dismiss
+    let node: FileNode
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: node.isDirectory ? "folder.fill" : "doc.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(node.isDirectory ? Color.accentColor : FileColor.color(for: node))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(node.name).font(.title3.bold()).lineLimit(2).truncationMode(.middle)
+                    Text(node.isDirectory ? "Folder" : FileColor.label(for: FileColor.kind(for: node)))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            Divider()
+            infoRow("Size", ByteFormat.string(node.size))
+            if node.isDirectory { infoRow("Items", "\(node.fileCount) files") }
+            if let d = node.modifiedAt { infoRow("Modified", d.formatted(date: .abbreviated, time: .shortened)) }
+            infoRow("Where", node.url.deletingLastPathComponent().path)
+            Divider()
+            HStack(spacing: 10) {
+                Button { NSWorkspace.shared.activateFileViewerSelecting([node.url]) } label: {
+                    Label("Reveal", systemImage: "folder")
+                }
+                if !node.isDirectory {
+                    Button { QuickLook.show(node.url) } label: { Label("Quick Look", systemImage: "eye") }
+                }
+                Spacer()
+                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 420)
+    }
+
+    private func infoRow(_ key: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(key).foregroundStyle(.secondary).frame(width: 70, alignment: .leading)
+            Text(value).textSelection(.enabled).lineLimit(3).truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+        .font(.callout)
     }
 }
 

@@ -73,6 +73,7 @@ private struct BreakdownRow: View {
                     if node.childrenOrNil != nil { withAnimation(.snappy) { expanded.toggle() } }
                 }
                 .contextMenu {
+                    Button { model.inspecting = node } label: { Label("Get Info", systemImage: "info.circle") }
                     Button("Reveal in Finder") {
                         NSWorkspace.shared.activateFileViewerSelecting([node.url])
                     }

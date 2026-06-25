@@ -27,6 +27,7 @@ struct ReclaimView: View {
                         duplicatesCard
                         similarCard
                         hiddenCard
+                        trashCard
                     }
                     .padding(16)
                     .frame(maxWidth: 820).frame(maxWidth: .infinity)
@@ -136,6 +137,17 @@ struct ReclaimView: View {
                     tint: .green) {
             if snaps > 0 {
                 Button("Reclaim") { Task { await model.reclaimSnapshots() } }.controlSize(.small)
+            }
+        }
+    }
+
+    private var trashCard: some View {
+        card("trash.fill", "Trash",
+             model.trashBytes > 0 ? "Items in ~/.Trash still taking up space"
+                                  : "Your Trash is empty",
+             tint: .red) {
+            if model.trashBytes > 0 {
+                amount(model.trashBytes, "Empty Trash") { Task { await model.emptyTrash() } }
             }
         }
     }
