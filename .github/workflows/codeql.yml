@@ -32,7 +32,7 @@ jobs:
             os: ubuntu-latest
             build-mode: none
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select latest Xcode
         if: matrix.language == 'swift'

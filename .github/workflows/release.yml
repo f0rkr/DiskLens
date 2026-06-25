@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: macos-26            # Xcode 16 / Swift 6, matches the dev toolchain
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select latest Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app && swift --version
