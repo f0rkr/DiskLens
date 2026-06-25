@@ -76,6 +76,9 @@ final class AppModel {
     var appsProgress = ""
     var didRunApps = false
 
+    var isWatching = false           // live folder watching (FSEvents)
+    var folderChanged = false        // the watched folder changed since the last scan
+
     var cleanupSuggestions: [CleanupSuggestion] = []
 
     var lastActionMessage: String?
@@ -94,11 +97,15 @@ final class AppModel {
     private var dupTask: Task<Void, Never>?
     private var similarTask: Task<Void, Never>?
     private var appsTask: Task<Void, Never>?
+    @ObservationIgnored private var watcher: FolderWatcher?
 
     init() {
         UserDefaults.standard.register(defaults: ["checkForUpdates": true])
         loadRecents()
         loadBin()
+        watcher = FolderWatcher { [weak self] in
+            Task { @MainActor in self?.handleFolderChange() }
+        }
     }
 
     func loadRecents() {
@@ -151,6 +158,8 @@ final class AppModel {
         currentPath = url.path
         scannedRoot = url
         addRecent(url)
+        folderChanged = false
+        if isWatching { watcher?.start(path: url.path) }
         rootNode = nil
         insights = ScanInsights()
         duplicateGroups = []
@@ -212,10 +221,13 @@ final class AppModel {
         dupTask?.cancel()
         similarTask?.cancel()
         appsTask?.cancel()
+        watcher?.stop()
         isScanning = false
         isFindingDuplicates = false
         isFindingSimilar = false
         isScanningApps = false
+        isWatching = false
+        folderChanged = false
         rootNode = nil
         scannedRoot = nil
         insights = ScanInsights()
@@ -323,6 +335,27 @@ final class AppModel {
     func cancelApps() {
         appsTask?.cancel()
         isScanningApps = false
+    }
+
+    // MARK: - Live folder watching (FSEvents)
+
+    func toggleWatch() {
+        isWatching.toggle()
+        if isWatching, let r = scannedRoot {
+            folderChanged = false
+            watcher?.start(path: r.path)
+        } else {
+            watcher?.stop()
+        }
+    }
+
+    private func handleFolderChange() {
+        guard isWatching, !isScanning else { return }
+        if UserDefaults.standard.bool(forKey: "autoRescan"), let r = scannedRoot {
+            scan(r)
+        } else {
+            folderChanged = true
+        }
     }
 
     // MARK: - Hidden space (Time Machine local snapshots, purgeable)

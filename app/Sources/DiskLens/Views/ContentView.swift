@@ -23,6 +23,9 @@ struct ContentView: View {
                 if model.unreadableCount > 0 {
                     FullDiskAccessBanner(count: model.unreadableCount)
                 }
+                if model.folderChanged {
+                    FolderChangedBanner()
+                }
                 sectionContent(root: root)
                     .id(root.id)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -78,6 +81,12 @@ struct TopBar: View {
             Spacer(minLength: 12)
             tabs.layoutPriority(1)
             Spacer(minLength: 12)
+
+            Button { model.toggleWatch() } label: {
+                Image(systemName: model.isWatching ? "binoculars.fill" : "binoculars").font(.body.weight(.semibold))
+            }
+            .buttonStyle(HoverIconStyle())
+            .help(model.isWatching ? "Watching this folder for changes — click to stop" : "Watch this folder for changes")
 
             Button { model.exportReport() } label: {
                 Image(systemName: "square.and.arrow.up").font(.body.weight(.semibold))
@@ -238,6 +247,25 @@ struct FullDiskAccessBanner: View {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+/// Shown while watching a folder, once it changes since the last scan.
+struct FolderChangedBanner: View {
+    @Environment(AppModel.self) private var model
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(Color.brand)
+            Text("This folder changed since the scan.").font(.callout.weight(.medium))
+            Spacer()
+            Button("Rescan") { if let u = model.scannedRoot { model.scan(u) } }
+                .controlSize(.small).disabled(model.isScanning)
+            Button { model.folderChanged = false } label: { Image(systemName: "xmark") }
+                .buttonStyle(.plain).foregroundStyle(.secondary).help("Dismiss")
+        }
+        .padding(.horizontal, 16).padding(.vertical, 8)
+        .background(Color.brand.opacity(0.10))
+        .overlay(alignment: .bottom) { Divider() }
     }
 }
 

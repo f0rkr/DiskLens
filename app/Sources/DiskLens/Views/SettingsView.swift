@@ -4,6 +4,7 @@ struct SettingsView: View {
     @AppStorage("useBinaryUnits") private var useBinary = false
     @AppStorage("archiveMinMB") private var archiveMinMB = 100
     @AppStorage("checkForUpdates") private var checkForUpdates = true
+    @AppStorage("autoRescan") private var autoRescan = false
 
     var body: some View {
         Form {
@@ -16,6 +17,11 @@ struct SettingsView: View {
                 Stepper(value: $archiveMinMB, in: 10...2000, step: 10) {
                     Text("Flag archives larger than **\(archiveMinMB) MB**")
                 }
+            }
+            Section("Monitoring") {
+                Toggle("Auto-rescan when the watched folder changes", isOn: $autoRescan)
+                Text("With watching on (the binoculars in the toolbar), rescan automatically instead of showing a prompt.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             Section("Updates") {
                 Toggle("Check for updates on launch", isOn: $checkForUpdates)
@@ -30,7 +36,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 470)
+        .frame(width: 460, height: 560)
     }
 
     private func shortcut(_ label: String, _ key: String) -> some View {
