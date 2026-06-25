@@ -70,6 +70,8 @@ struct MenuBarView: View {
             menuButton("Scan Home Folder", "house") {
                 model.scan(FileManager.default.homeDirectoryForCurrentUser); activate()
             }
+            menuButton(DiskGaugeController.shared.isVisible ? "Hide Desktop Gauge" : "Show Desktop Gauge",
+                       "speedometer") { DiskGaugeController.shared.toggle() }
             menuButton("Refresh", "arrow.clockwise") { stats = DiskStats.current(); tick() }
         }
         .padding(16)
