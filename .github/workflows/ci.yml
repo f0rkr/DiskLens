@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-26            # Xcode 26 / macOS 26 SDK, required for the Liquid Glass APIs
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select latest Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app && swift --version
@@ -40,7 +40,7 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
