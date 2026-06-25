@@ -5,9 +5,20 @@ struct SettingsView: View {
     @AppStorage("archiveMinMB") private var archiveMinMB = 100
     @AppStorage("checkForUpdates") private var checkForUpdates = true
     @AppStorage("autoRescan") private var autoRescan = false
+    @AppStorage("appearance") private var appearance = "system"
 
     var body: some View {
         Form {
+            Section("Appearance") {
+                Picker("Appearance", selection: $appearance) {
+                    Text("System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .pickerStyle(.segmented)
+                Text("System follows your Mac's light/dark setting.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Units") {
                 Toggle("Use binary units (1024-based)", isOn: $useBinary)
                 Text("Off: 1 GB = 1,000 MB (macOS default). On: 1 GB = 1,024 MB.")
@@ -36,7 +47,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 560)
+        .frame(width: 460, height: 630)
     }
 
     private func shortcut(_ label: String, _ key: String) -> some View {

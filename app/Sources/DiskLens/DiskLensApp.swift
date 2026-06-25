@@ -5,12 +5,23 @@ import AppKit
 struct DiskLensApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var model = AppModel()
+    @AppStorage("appearance") private var appearance = "system"
+
+    /// nil = follow the Mac's light/dark setting.
+    private var scheme: ColorScheme? {
+        switch appearance {
+        case "light": return .light
+        case "dark":  return .dark
+        default:      return nil
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(model)
                 .tint(.brand)
+                .preferredColorScheme(scheme)
                 .frame(minWidth: 1000, minHeight: 640)
         }
         .windowToolbarStyle(.unified)
@@ -25,12 +36,12 @@ struct DiskLensApp: App {
         }
 
         MenuBarExtra("DiskLens", systemImage: "internaldrive") {
-            MenuBarView(model: model)
+            MenuBarView(model: model).preferredColorScheme(scheme)
         }
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView()
+            SettingsView().preferredColorScheme(scheme)
         }
     }
 }
