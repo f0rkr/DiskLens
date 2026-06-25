@@ -40,6 +40,7 @@ struct ContentView: View {
         case .breakdown:  BreakdownView(root: root)
         case .treemap:    TreemapView(root: root)
         case .files:      FilesView()
+        case .byApp:      AppsView()
         case .duplicates: DuplicatesView()
         case .similar:    SimilarPhotosView()
         case .cleanup:    CleanupView()

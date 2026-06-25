@@ -19,6 +19,7 @@ final class AppModel {
         case breakdown = "Breakdown"
         case treemap = "Treemap"
         case files = "Files"
+        case byApp = "Apps"
         case duplicates = "Duplicates"
         case similar = "Similar"
         case cleanup = "Cleanup"
@@ -31,6 +32,7 @@ final class AppModel {
             case .breakdown:  return "list.bullet.indent"
             case .treemap:    return "square.grid.3x3.fill"
             case .files:      return "doc.text.magnifyingglass"
+            case .byApp:      return "square.grid.2x2.fill"
             case .duplicates: return "doc.on.doc.fill"
             case .similar:    return "photo.on.rectangle.angled"
             case .cleanup:    return "sparkles"
@@ -69,6 +71,11 @@ final class AppModel {
 
     var hiddenSpace: HiddenSpace?    // Time Machine snapshots + purgeable, for the Reclaim view
 
+    var appUsages: [AppUsage] = []   // per-application storage ("By App"), on demand
+    var isScanningApps = false
+    var appsProgress = ""
+    var didRunApps = false
+
     var cleanupSuggestions: [CleanupSuggestion] = []
 
     var lastActionMessage: String?
@@ -86,6 +93,7 @@ final class AppModel {
     private var scanTask: Task<Void, Never>?
     private var dupTask: Task<Void, Never>?
     private var similarTask: Task<Void, Never>?
+    private var appsTask: Task<Void, Never>?
 
     init() {
         UserDefaults.standard.register(defaults: ["checkForUpdates": true])
@@ -203,9 +211,11 @@ final class AppModel {
         scanTask?.cancel()
         dupTask?.cancel()
         similarTask?.cancel()
+        appsTask?.cancel()
         isScanning = false
         isFindingDuplicates = false
         isFindingSimilar = false
+        isScanningApps = false
         rootNode = nil
         scannedRoot = nil
         insights = ScanInsights()
@@ -220,6 +230,8 @@ final class AppModel {
         lastHistory = []
         diskStats = nil
         unreadableCount = 0
+        appUsages = []
+        didRunApps = false
     }
 
     // MARK: - Duplicates (run on demand — it's the expensive pass)
@@ -282,6 +294,35 @@ final class AppModel {
     func cancelSimilar() {
         similarTask?.cancel()
         isFindingSimilar = false
+    }
+
+    // MARK: - Per-app storage (on demand; independent of the folder scan)
+
+    func findApps() {
+        guard !isScanningApps else { return }
+        appsTask?.cancel()
+        isScanningApps = true
+        appsProgress = "Starting…"
+        appUsages = []
+
+        appsTask = Task.detached(priority: .userInitiated) { [weak self] in
+            let apps = AppUsageScanner.scan(
+                isCancelled: { Task.isCancelled },
+                progress: { msg in Task { @MainActor [weak self] in self?.appsProgress = msg } })
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                if !Task.isCancelled {
+                    self.appUsages = apps
+                    self.didRunApps = true
+                }
+                self.isScanningApps = false
+            }
+        }
+    }
+
+    func cancelApps() {
+        appsTask?.cancel()
+        isScanningApps = false
     }
 
     // MARK: - Hidden space (Time Machine local snapshots, purgeable)

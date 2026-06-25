@@ -190,6 +190,20 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - Per-app storage (directory sizing)
+
+@Suite struct AppUsageTests {
+    @Test func dirSizeSumsTree() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("appusage-\(UUID().uuidString)")
+        let sub = dir.appendingPathComponent("sub")
+        try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try Data(count: 10_000).write(to: dir.appendingPathComponent("a.bin"))
+        try Data(count: 5_000).write(to: sub.appendingPathComponent("b.bin"))
+        #expect(AppUsageScanner.dirSize(dir) >= 15_000)   // allocated size rounds up to block size
+    }
+}
+
 // MARK: - Hidden space (Time Machine snapshot parsing)
 
 @Suite struct HiddenSpaceTests {
