@@ -26,7 +26,7 @@ jobs:
       matrix:
         include:
           - language: swift
-            os: macos-15
+            os: macos-26
             build-mode: manual
           - language: javascript-typescript
             os: ubuntu-latest
