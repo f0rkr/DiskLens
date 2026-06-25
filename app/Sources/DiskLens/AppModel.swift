@@ -20,6 +20,7 @@ final class AppModel {
         case treemap = "Treemap"
         case files = "Files"
         case duplicates = "Duplicates"
+        case similar = "Similar"
         case cleanup = "Cleanup"
         case bin = "Bin"
         var id: String { rawValue }
@@ -30,6 +31,7 @@ final class AppModel {
             case .treemap:    return "square.grid.3x3.fill"
             case .files:      return "doc.text.magnifyingglass"
             case .duplicates: return "doc.on.doc.fill"
+            case .similar:    return "photo.on.rectangle.angled"
             case .cleanup:    return "sparkles"
             case .bin:        return "xmark.bin.fill"
             }
@@ -58,6 +60,11 @@ final class AppModel {
     var duplicateProgress = ""
     var didRunDuplicates = false
 
+    var similarGroups: [SimilarGroup] = []
+    var isFindingSimilar = false
+    var similarProgress = ""
+    var didRunSimilar = false
+
     var cleanupSuggestions: [CleanupSuggestion] = []
 
     var lastActionMessage: String?
@@ -74,6 +81,7 @@ final class AppModel {
     private let binKey = "binItems"
     private var scanTask: Task<Void, Never>?
     private var dupTask: Task<Void, Never>?
+    private var similarTask: Task<Void, Never>?
 
     init() {
         UserDefaults.standard.register(defaults: ["checkForUpdates": true])
@@ -125,6 +133,7 @@ final class AppModel {
     func scan(_ url: URL) {
         scanTask?.cancel()
         dupTask?.cancel()
+        similarTask?.cancel()
         isScanning = true
         filesScanned = 0
         currentPath = url.path
@@ -134,6 +143,8 @@ final class AppModel {
         insights = ScanInsights()
         duplicateGroups = []
         didRunDuplicates = false
+        similarGroups = []
+        didRunSimilar = false
         cleanupSuggestions = []
         lastActionMessage = nil
         lastDelta = nil
@@ -186,13 +197,17 @@ final class AppModel {
     func reset() {
         scanTask?.cancel()
         dupTask?.cancel()
+        similarTask?.cancel()
         isScanning = false
         isFindingDuplicates = false
+        isFindingSimilar = false
         rootNode = nil
         scannedRoot = nil
         insights = ScanInsights()
         duplicateGroups = []
         didRunDuplicates = false
+        similarGroups = []
+        didRunSimilar = false
         cleanupSuggestions = []
         lastActionMessage = nil
         lastDelta = nil
@@ -231,6 +246,36 @@ final class AppModel {
     func cancelDuplicates() {
         dupTask?.cancel()
         isFindingDuplicates = false
+    }
+
+    // MARK: - Similar photos (Vision; on-demand, the expensive pass)
+
+    func findSimilarPhotos() {
+        guard let root = rootNode, !isFindingSimilar else { return }
+        similarTask?.cancel()
+        isFindingSimilar = true
+        similarProgress = "Starting…"
+        similarGroups = []
+
+        similarTask = Task.detached(priority: .userInitiated) { [weak self] in
+            let groups = SimilarImages.find(
+                in: root,
+                isCancelled: { Task.isCancelled },
+                progress: { msg in Task { @MainActor [weak self] in self?.similarProgress = msg } })
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                if !Task.isCancelled {
+                    self.similarGroups = groups
+                    self.didRunSimilar = true
+                }
+                self.isFindingSimilar = false
+            }
+        }
+    }
+
+    func cancelSimilar() {
+        similarTask?.cancel()
+        isFindingSimilar = false
     }
 
     // MARK: - Deletion

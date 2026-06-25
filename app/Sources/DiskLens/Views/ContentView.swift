@@ -41,6 +41,7 @@ struct ContentView: View {
         case .treemap:    TreemapView(root: root)
         case .files:      FilesView()
         case .duplicates: DuplicatesView()
+        case .similar:    SimilarPhotosView()
         case .cleanup:    CleanupView()
         case .bin:        BinView()
         }

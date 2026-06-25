@@ -164,6 +164,32 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
     }
 }
 
+// MARK: - Similar-image grouping (pure core)
+
+@Suite struct SimilarImagesTests {
+    @Test func clustersByThreshold() {
+        func dist(_ a: Int, _ b: Int) -> Float? {
+            let pair = Set([a, b])
+            if pair == Set([0, 1]) { return 0.1 }   // close
+            if pair == Set([3, 4]) { return 0.2 }    // close
+            return 0.9                                // far
+        }
+        let groups = SimilarImages.groupIndices(5, threshold: 0.3,
+                                                sameBucket: { _, _ in true }, distance: dist)
+        #expect(groups.count == 2)
+        #expect(groups.contains { Set($0) == Set([0, 1]) })
+        #expect(groups.contains { Set($0) == Set([3, 4]) })
+        #expect(!groups.flatMap { $0 }.contains(2))   // unique image isn't grouped
+    }
+
+    @Test func respectsBucketSeparation() {
+        // Close distance but different buckets → not grouped.
+        let groups = SimilarImages.groupIndices(2, threshold: 0.3,
+                                                sameBucket: { _, _ in false }, distance: { _, _ in 0.05 })
+        #expect(groups.isEmpty)
+    }
+}
+
 // MARK: - System stats (CPU / memory)
 
 @Suite struct SystemStatsTests {
