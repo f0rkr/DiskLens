@@ -19,16 +19,18 @@ struct ReclaimView: View {
         VStack(spacing: 0) {
             UndoBanner()
             ScrollView {
-                VStack(spacing: 14) {
-                    summary
-                    cleanupCard
-                    oldLargeCard
-                    duplicatesCard
-                    similarCard
-                    hiddenCard
+                GlassGroup {
+                    VStack(spacing: 14) {
+                        summary
+                        cleanupCard
+                        oldLargeCard
+                        duplicatesCard
+                        similarCard
+                        hiddenCard
+                    }
+                    .padding(16)
+                    .frame(maxWidth: 820).frame(maxWidth: .infinity)
                 }
-                .padding(16)
-                .frame(maxWidth: 820).frame(maxWidth: .infinity)
             }
         }
         .task { await model.refreshHiddenSpace() }
@@ -39,6 +41,8 @@ struct ReclaimView: View {
             Text(ByteFormat.string(headline))
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundStyle(LinearGradient(colors: [.brand, .brand2], startPoint: .leading, endPoint: .trailing))
+                .contentTransition(.numericText())
+                .animation(.snappy, value: headline)
             Text("ready to reclaim, staged safely to the Bin").foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 6)

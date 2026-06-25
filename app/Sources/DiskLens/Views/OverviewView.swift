@@ -40,12 +40,14 @@ struct OverviewView: View {
     // MARK: - top stat cards
 
     private var statRow: some View {
-        HStack(spacing: 14) {
-            totalCard
-            stat("Files", insights.totalFiles.formatted(), "doc.on.doc.fill")
-            stat("Types", "\(insights.categories.count)", "square.grid.2x2.fill")
-            stat("Largest", ByteFormat.string(insights.topItems.first?.size ?? 0), "arrow.up.circle.fill",
-                 sub: insights.largestName)
+        GlassGroup {
+            HStack(spacing: 14) {
+                totalCard
+                stat("Files", insights.totalFiles.formatted(), "doc.on.doc.fill")
+                stat("Types", "\(insights.categories.count)", "square.grid.2x2.fill")
+                stat("Largest", ByteFormat.string(insights.topItems.first?.size ?? 0), "arrow.up.circle.fill",
+                     sub: insights.largestName)
+            }
         }
         .frame(height: 128)
     }
@@ -58,6 +60,8 @@ struct OverviewView: View {
                 .font(statFont)
                 .foregroundStyle(LinearGradient(colors: [.brand, .brand2], startPoint: .leading, endPoint: .trailing))
                 .lineLimit(1).minimumScaleFactor(0.5)
+                .contentTransition(.numericText())
+                .animation(.snappy, value: insights.totalBytes)
             Spacer(minLength: 0)
             if let d = diskStats, d.total > 0 {
                 GeometryReader { g in

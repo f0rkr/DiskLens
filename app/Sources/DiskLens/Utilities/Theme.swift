@@ -48,16 +48,25 @@ struct HoverIconStyle: ButtonStyle {
         let c: ButtonStyleConfiguration
         let size: CGFloat
         @State private var hover = false
+        private let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
         var body: some View {
             c.label
                 .frame(width: size, height: size)
                 .foregroundStyle(hover ? Color.primary : Color.secondary)
-                .background(hover ? Color.primary.opacity(0.12) : .clear,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background { hoverBackground }
                 .scaleEffect(c.isPressed ? 0.86 : 1)
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(shape)
                 .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hover = h } }
                 .animation(.easeOut(duration: 0.1), value: c.isPressed)
+        }
+        @ViewBuilder private var hoverBackground: some View {
+            if hover {
+                if #available(macOS 26.0, *) {
+                    Color.clear.glassEffect(.regular.interactive(), in: shape)
+                } else {
+                    shape.fill(Color.primary.opacity(0.12))
+                }
+            }
         }
     }
 }
@@ -97,6 +106,20 @@ struct RowButtonStyle: ButtonStyle {
                 .contentShape(Rectangle())
                 .onHover { h in withAnimation(.easeOut(duration: 0.12)) { hover = h } }
                 .opacity(c.isPressed ? 0.55 : 1)
+        }
+    }
+}
+
+/// Groups nearby Liquid Glass surfaces so they blend/merge correctly on
+/// macOS 26+. A no-op passthrough on earlier macOS.
+struct GlassGroup<Content: View>: View {
+    var spacing: CGFloat? = 14
+    @ViewBuilder var content: Content
+    var body: some View {
+        if #available(macOS 26.0, *) {
+            GlassEffectContainer(spacing: spacing) { content }
+        } else {
+            content
         }
     }
 }
