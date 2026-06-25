@@ -44,6 +44,7 @@ struct ContentView: View {
         case .treemap:    TreemapView(root: root)
         case .files:      FilesView()
         case .byApp:      AppsView()
+        case .byType:     ByTypeView(insights: model.insights)
         case .duplicates: DuplicatesView()
         case .similar:    SimilarPhotosView()
         case .cleanup:    CleanupView()

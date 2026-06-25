@@ -13,6 +13,8 @@ struct CleanupSuggestion: Identifiable {
         case caches = "Caches"
         case junk = "Junk files"
         case largeArchives = "Large archives & installers"
+        case emptyFolders = "Empty folders"
+        case brokenLinks = "Broken aliases"
 
         var id: String { rawValue }
         var icon: String {
@@ -21,6 +23,8 @@ struct CleanupSuggestion: Identifiable {
             case .caches: return "arrow.triangle.2.circlepath"
             case .junk: return "trash.fill"
             case .largeArchives: return "shippingbox.fill"
+            case .emptyFolders: return "folder.badge.minus"
+            case .brokenLinks: return "link"
             }
         }
         var blurb: String {
@@ -29,6 +33,8 @@ struct CleanupSuggestion: Identifiable {
             case .caches: return "Apps rebuild these automatically."
             case .junk: return "Leftover temp files and incomplete downloads."
             case .largeArchives: return "Big downloads you may no longer need."
+            case .emptyFolders: return "Folders with nothing inside."
+            case .brokenLinks: return "Aliases whose target no longer exists."
             }
         }
     }
@@ -80,7 +86,15 @@ enum CleanupRules {
                     }
                     return
                 }
+                if node.url != root.url, node.children.isEmpty, node.fileCount == 0 {
+                    out.append(.init(category: .emptyFolders, url: node.url, size: node.size, detail: "empty"))
+                    return
+                }
                 for c in node.children { walk(c, insidePrunedDir: insidePrunedDir) }
+            } else if node.isSymlink {
+                if isBrokenSymlink(node.url) {
+                    out.append(.init(category: .brokenLinks, url: node.url, size: 0, detail: "broken"))
+                }
             } else {
                 if junkNames.contains(node.name) || junkExtensions.contains(node.fileExtension) {
                     out.append(.init(category: .junk, url: node.url, size: node.size,
@@ -92,7 +106,19 @@ enum CleanupRules {
             }
         }
 
+        func isBrokenSymlink(_ url: URL) -> Bool { CleanupRules.isBrokenSymlink(url) }
+
         walk(root, insidePrunedDir: false)
         return out.sorted { $0.size > $1.size }
+    }
+
+    /// Whether `url` is a symlink/alias whose target no longer exists.
+    static func isBrokenSymlink(_ url: URL) -> Bool {
+        let fm = FileManager.default
+        guard let dest = try? fm.destinationOfSymbolicLink(atPath: url.path) else { return false }
+        let resolved = (dest as NSString).isAbsolutePath
+            ? dest
+            : (url.deletingLastPathComponent().path as NSString).appendingPathComponent(dest)
+        return !fm.fileExists(atPath: resolved)
     }
 }

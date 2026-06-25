@@ -66,6 +66,7 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
         let root = mkDir("proj", [
             mkDir("node_modules", [mkFile("index.js", 5_000_000)]),
             mkDir(".venv", [mkFile("python", 9_000_000)]),
+            mkDir("emptydir", []),
             mkFile(".DS_Store", 4096),
             mkFile("big.zip", 200 * 1024 * 1024),
             mkFile("notes.md", 1000),
@@ -73,9 +74,26 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
         let s = CleanupRules.analyze(root)
         #expect(s.contains { $0.category == .buildArtifacts && $0.url.lastPathComponent == "node_modules" })
         #expect(s.contains { $0.category == .buildArtifacts && $0.url.lastPathComponent == ".venv" })
+        #expect(s.contains { $0.category == .emptyFolders && $0.url.lastPathComponent == "emptydir" })
         #expect(s.contains { $0.category == .junk && $0.url.lastPathComponent == ".DS_Store" })
         #expect(s.contains { $0.category == .largeArchives && $0.url.lastPathComponent == "big.zip" })
         #expect(!s.contains { $0.url.lastPathComponent == "notes.md" })
+    }
+
+    @Test func detectsBrokenSymlink() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("sym-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let dangling = dir.appendingPathComponent("dangling")
+        try FileManager.default.createSymbolicLink(atPath: dangling.path,
+                                                   withDestinationPath: dir.appendingPathComponent("nope").path)
+        #expect(CleanupRules.isBrokenSymlink(dangling))
+
+        let real = dir.appendingPathComponent("real.txt"); try Data().write(to: real)
+        let good = dir.appendingPathComponent("good")
+        try FileManager.default.createSymbolicLink(atPath: good.path, withDestinationPath: real.path)
+        #expect(!CleanupRules.isBrokenSymlink(good))
     }
 }
 
@@ -93,6 +111,23 @@ func mkDir(_ name: String, _ children: [FileNode]) -> FileNode {
         #expect(ins.categories.first?.kind == .media)        // 5 MB media > 1 MB code
         #expect(ins.topFiles.first?.name == "a.png")
         #expect(ins.topFiles.count == 3)
+    }
+
+    @Test func byExtensionAndAge() {
+        let now = Date(timeIntervalSince1970: 1_000_000_000)
+        let recent = now.addingTimeInterval(-10 * 86_400)    // 10 days
+        let old = now.addingTimeInterval(-800 * 86_400)      // 800 days -> 2+ years
+        let root = mkDir("root", [
+            mkFile("a.png", 3_000_000, modified: recent),
+            mkFile("b.png", 2_000_000, modified: old),
+            mkFile("c.txt", 1_000_000, modified: recent),
+        ])
+        let ins = ScanInsights.compute(from: root, now: now)
+        #expect(ins.byExtension.first?.label == "png")       // png total 5 MB > txt 1 MB
+        #expect(ins.byExtension.first?.bytes == 5_000_000)
+        #expect(ins.byExtension.contains { $0.label == "txt" })
+        #expect(ins.byAge.contains { $0.label == "Last 30 days" })
+        #expect(ins.byAge.contains { $0.label == "2+ years" })
     }
 }
 
